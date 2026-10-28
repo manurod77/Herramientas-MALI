@@ -1,0 +1,1276 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Visualizador Solar de Vanos — PRO v3</title>
+<!--
+  MALI · Módulo 3 · S02 · Co-piloto bioclimático
+  v3: optimizador con scoring verificado + arrays equidistantes de lamas y parasoles
+-->
+</head>
+<body>
+<div id="app">
+  <div id="stage">
+    <div id="canvas-wrap"></div>
+    <div id="overlay-top">
+      <div class="badge" id="sun-status">—</div>
+      <div class="badge alt" id="season-label">Sol. jun</div>
+      <div class="badge epw" id="epw-badge">Modelo sintético</div>
+    </div>
+    <div id="legend">
+      <span><i style="background:#e8533a"></i>Sobreexpuesto</span>
+      <span><i style="background:#f5a623"></i>Moderado</span>
+      <span><i style="background:#3fb950"></i>Óptimo</span>
+      <span><i style="background:#3a86d8"></i>Insuficiente</span>
+      <span class="sep"></span>
+      <span><i style="background:#ffd24a"></i>Punto al sol</span>
+      <span><i style="background:#46506b"></i>Punto en sombra</span>
+    </div>
+    <div id="view-tabs">
+      <button data-view="instant" class="active">Instante</button>
+      <button data-view="annual">Mapa anual</button>
+    </div>
+  </div>
+
+  <aside id="panel">
+    <header>
+      <div class="kicker">MALI · M3 · S02 · PRO v3</div>
+      <h1>Visualizador Solar de Vanos</h1>
+      <p class="sub">Raycasting real, balance estacional, optimizador por estrategia bioclimática y arrays equidistantes de protección.</p>
+    </header>
+
+    <section class="ctrl">
+      <div class="ctrl-head"><span>Ubicación</span><span class="val" id="loc-val">Lima, Perú</span></div>
+      <label>Latitud <output id="lat-out">-12.05</output></label>
+      <input type="range" id="lat" min="-60" max="60" step="0.5" value="-12.05">
+      <label>Longitud <output id="lon-out">-77.04</output></label>
+      <input type="range" id="lon" min="-180" max="180" step="0.5" value="-77.04">
+      <div class="presets">
+        <button data-lat="-12.05" data-lon="-77.04" data-name="Lima">Lima</button>
+        <button data-lat="-3.74" data-lon="-73.30" data-name="Iquitos">Iquitos</button>
+        <button data-lat="-13.52" data-lon="-71.97" data-name="Cusco">Cusco</button>
+        <button data-lat="-16.40" data-lon="-71.55" data-name="Arequipa">Arequipa</button>
+      </div>
+      <div class="stn">
+        <label for="stn-sel">Todas las estaciones del Perú (<span id="stn-n"></span>, con archivo climático)</label>
+        <select id="stn-sel"><option value="">Elige una estación…</option></select>
+      </div>
+      <p class="hint" id="zone-hint">Desierto costero subtropical (BWh). Sub-enfría buena parte del año; ganar sol es prioridad.</p>
+    </section>
+
+    <section class="ctrl">
+      <div class="ctrl-head"><span>Datos climáticos</span><span class="val" id="epw-val">Sintético</span></div>
+      <label class="file-row">
+        <span id="epw-name">Cargar archivo .epw (opcional)</span>
+        <input type="file" id="epw-file" accept=".epw" hidden>
+        <button id="epw-btn" type="button">Examinar</button>
+      </label>
+      <p class="hint">Sin archivo, el sol se calcula con el modelo NOAA validado. Con un EPW se ponderan horas por radiación real. Descarga archivos en <span style="color:#0891B2">energyplus.net/weather</span>.</p>
+    </section>
+
+    <section class="ctrl">
+      <div class="ctrl-head"><span>Momento del año</span><span class="val" id="date-val">Solsticio jun</span></div>
+      <div class="seg" id="season-seg">
+        <button data-doy="172" class="active">Sol. jun</button>
+        <button data-doy="266">Equinoccio</button>
+        <button data-doy="355">Sol. dic</button>
+      </div>
+      <label>Hora del día <output id="hour-out">12:00</output></label>
+      <input type="range" id="hour" min="5" max="19" step="0.25" value="12">
+    </section>
+
+    <section class="ctrl">
+      <div class="ctrl-head"><span>Orientación de fachada</span><span class="val" id="orient-val">Norte</span></div>
+      <input type="range" id="orient" min="0" max="360" step="15" value="0">
+      <div class="orient-row"><span>N</span><span>E</span><span>S</span><span>O</span><span>N</span></div>
+    </section>
+
+    <section class="ctrl">
+      <div class="ctrl-head"><span>Geometría del vano</span></div>
+      <label>Ancho <output id="vw-out">1.6 m</output></label>
+      <input type="range" id="vw" min="0.6" max="3.4" step="0.1" value="1.6">
+      <label>Alto <output id="vh-out">1.4 m</output></label>
+      <input type="range" id="vh" min="0.6" max="2.4" step="0.1" value="1.4">
+    </section>
+
+    <section class="ctrl">
+      <div class="ctrl-head"><span>Protección solar</span></div>
+      <label class="chk"><input type="checkbox" id="alero"> Alero superior <output id="alero-d">0.6 m</output></label>
+      <input type="range" id="alero-len" min="0.2" max="1.5" step="0.1" value="0.6" disabled>
+
+      <label>Lamas horizontales <output id="lamasN-out">0</output></label>
+      <input type="range" id="lamasN" min="0" max="6" step="1" value="0">
+      <label>Profundidad lamas <output id="lamasL-out">0.4 m</output></label>
+      <input type="range" id="lamasL" min="0.2" max="1.0" step="0.1" value="0.4" disabled>
+
+      <label>Parasoles verticales <output id="parasolN-out">0</output></label>
+      <input type="range" id="parasolN" min="0" max="6" step="1" value="0">
+      <label>Profundidad parasol <output id="parasolL-out">0.4 m</output></label>
+      <input type="range" id="parasolL" min="0.2" max="1.0" step="0.1" value="0.4" disabled>
+    </section>
+
+    <section class="ctrl optimize">
+      <div class="ctrl-head"><span>Estrategia bioclimática</span></div>
+      <div class="seg strat" id="strat-seg">
+        <button data-strat="gain" class="active">Ganancia</button>
+        <button data-strat="balance">Equilibrio</button>
+        <button data-strat="reduce">Reducir excesos</button>
+      </div>
+      <p class="hint" id="strat-hint">Ganancia: maximizar sol útil y área. Sin protección si el clima sub-enfría (Lima, Cusco).</p>
+      <button id="optimize-btn">⚙ Optimizar vano según estrategia</button>
+    </section>
+
+    <section class="ctrl export">
+      <div class="ctrl-head"><span>Exportar geometría</span></div>
+      <div class="export-row">
+        <button id="export-obj" class="btn-sec">↓ Modelo 3D (.obj)</button>
+        <button id="export-json" class="btn-sec">↓ Análisis (.json)</button>
+      </div>
+      <p class="hint">El .obj abre en SketchUp, Rhino, Blender, 3ds Max, Maya. El .json guarda parámetros y resultados anuales.</p>
+    </section>
+
+    <section id="readout">
+      <div class="metric"><span class="m-label">Incidencia solar</span><span class="m-val" id="m-incid">—</span></div>
+      <div class="metric"><span class="m-label">Altura solar</span><span class="m-val" id="m-alt">—</span></div>
+      <div class="metric"><span class="m-label">Azimut solar</span><span class="m-val" id="m-azi">—</span></div>
+      <div class="metric"><span class="m-label">Punto en sombra</span><span class="m-val" id="m-shadepct">—</span></div>
+      <div class="metric"><span class="m-label">Estado del vano</span><span class="m-val" id="m-state">—</span></div>
+    </section>
+
+    <section id="annual-panel">
+      <div class="annual-head">Balance anual del vano</div>
+      <div class="annual-bars">
+        <div class="abar"><span class="abar-l">Sol · frío</span><div class="abar-track"><div class="abar-fill sun" id="ab-sunw"></div></div><span class="abar-v" id="ab-sunw-v">—</span></div>
+        <div class="abar"><span class="abar-l">Sombra · frío</span><div class="abar-track"><div class="abar-fill shade" id="ab-shadew"></div></div><span class="abar-v" id="ab-shadew-v">—</span></div>
+        <div class="abar"><span class="abar-l">Sol · calor</span><div class="abar-track"><div class="abar-fill sun" id="ab-suns"></div></div><span class="abar-v" id="ab-suns-v">—</span></div>
+        <div class="abar"><span class="abar-l">Sombra · calor</span><div class="abar-track"><div class="abar-fill shade" id="ab-shades"></div></div><span class="abar-v" id="ab-shades-v">—</span></div>
+      </div>
+      <p class="annual-note">Horas de incidencia directa al año, separadas por periodo frío y periodo cálido (con un EPW cargado se definen por temperatura; sin EPW, por calendario).</p>
+    </section>
+
+    <section id="heat-panel" style="display:none">
+      <div class="annual-head">Mapa de calor del vano</div>
+      <div class="heatbar"></div>
+      <div class="heatbar-l"><span>0 %</span><span>50 %</span><span>100 %</span></div>
+      <p class="annual-note" id="heat-note">—</p>
+    </section>
+
+    <section id="sunpath-panel" style="display:none">
+      <div class="annual-head">Trayectoria solar y sombra de la protección</div>
+      <canvas id="sunpath" width="360" height="260"></canvas>
+      <p class="annual-note" id="sunpath-note">—</p>
+    </section>
+
+    <section id="reco">
+      <div class="reco-head">Recomendación</div>
+      <p id="reco-text">Ajusta los controles para evaluar el vano.</p>
+    </section>
+
+    <footer>Raycasting · Spencer/NOAA validado vs SunEarthTools · EPW-ready · export OBJ · modelo didáctico, no sustituye simulación energética certificada</footer>
+  </aside>
+</div>
+
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  #app{display:grid;grid-template-columns:1fr 380px;height:100vh;min-height:620px;
+    font-family:ui-sans-serif,system-ui,-apple-system,sans-serif;background:#0d1117;color:#e6edf3;
+    --accent:#00C896;--accent2:#0891B2;--accent3:#c9712e}
+  #stage{position:relative;overflow:hidden;background:radial-gradient(ellipse at 50% 25%,#1a2433 0%,#0d1117 72%)}
+  #canvas-wrap{width:100%;height:100%}
+  #canvas-wrap canvas{display:block}
+
+  #overlay-top{position:absolute;top:16px;left:16px;display:flex;gap:8px;flex-wrap:wrap;pointer-events:none;max-width:70%}
+  .badge{background:rgba(28,35,51,.85);backdrop-filter:blur(8px);border:1px solid #2a3441;
+    padding:6px 12px;border-radius:20px;font-size:12px;font-weight:600;color:var(--accent)}
+  .badge.alt{color:#f5a623}
+  .badge.epw{color:#8b949e}
+  .badge.epw.active{color:var(--accent2)}
+
+  #legend{position:absolute;bottom:16px;left:16px;display:flex;gap:12px;flex-wrap:wrap;align-items:center;
+    background:rgba(28,35,51,.85);backdrop-filter:blur(8px);border:1px solid #2a3441;
+    padding:8px 14px;border-radius:10px;font-size:11px;color:#b8c2cc;max-width:90%}
+  #legend span{display:flex;align-items:center;gap:5px}
+  #legend i{width:11px;height:11px;border-radius:3px;display:inline-block}
+  #legend .sep{width:1px;height:14px;background:#2a3441}
+
+  #view-tabs{position:absolute;top:16px;right:16px;display:flex;gap:4px;background:rgba(28,35,51,.85);
+    backdrop-filter:blur(8px);border:1px solid #2a3441;padding:4px;border-radius:9px}
+  #view-tabs button{background:transparent;border:none;color:#8b949e;font-size:12px;font-weight:600;
+    padding:7px 14px;border-radius:6px;cursor:pointer;transition:.15s}
+  #view-tabs button.active{background:var(--accent);color:#0d1117}
+
+  #panel{background:#11161d;border-left:1px solid #21262d;overflow-y:auto;padding:22px}
+  #panel header{margin-bottom:18px}
+  .kicker{font-size:10px;letter-spacing:3px;color:var(--accent);font-weight:700;margin-bottom:8px}
+  #panel h1{font-size:19px;font-weight:700;line-height:1.2;margin-bottom:6px}
+  .sub{font-size:12px;color:#8b949e;line-height:1.5}
+
+  .ctrl{padding:15px 0;border-top:1px solid #21262d}
+  .ctrl-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
+  .ctrl-head>span:first-child{font-size:13px;font-weight:600}
+  .val{font-size:12px;color:var(--accent);font-weight:600}
+  .ctrl label{display:flex;justify-content:space-between;font-size:11.5px;color:#8b949e;margin:11px 0 6px}
+  .ctrl label output{color:#e6edf3;font-variant-numeric:tabular-nums}
+  .hint{font-size:10.5px;color:#6b7681;line-height:1.45;margin-top:8px}
+
+  input[type=range]{width:100%;height:4px;border-radius:4px;background:#21262d;appearance:none;outline:none}
+  input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;border-radius:50%;
+    background:var(--accent);cursor:pointer;border:2px solid #0d1117;box-shadow:0 0 0 1px var(--accent)}
+  input[type=range]:disabled{opacity:.4}
+  input[type=range]:disabled::-webkit-slider-thumb{background:#6b7681;box-shadow:none}
+
+  .presets{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:12px}
+  .presets button{background:#1c2333;border:1px solid #2a3441;color:#b8c2cc;font-size:11px;
+    padding:7px 4px;border-radius:7px;cursor:pointer;transition:.15s}
+  .presets button:hover{border-color:var(--accent);color:var(--accent)}
+  .stn{margin-top:10px}
+  .stn label{display:block;font-size:11px;color:#8b97a3;margin-bottom:4px}
+  .stn select{width:100%;background:#1c2333;border:1px solid #2a3441;color:#b8c2cc;font-size:11px;padding:6px;border-radius:6px}
+  .stn select:focus{outline:1px solid var(--accent)}
+  .presets button.active{border-color:var(--accent);color:var(--accent);background:rgba(0,200,150,.08)}
+
+  .file-row{display:flex !important;align-items:center;gap:8px;justify-content:space-between !important}
+  #epw-name{font-size:11.5px;color:#b8c2cc;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #epw-btn{background:#1c2333;border:1px solid #2a3441;color:#b8c2cc;font-size:11px;padding:6px 12px;
+    border-radius:7px;cursor:pointer;flex-shrink:0}
+  #epw-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+
+  .seg{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:#1c2333;padding:4px;border-radius:9px}
+  .seg button{background:transparent;border:none;color:#8b949e;font-size:11.5px;font-weight:600;
+    padding:8px 4px;border-radius:6px;cursor:pointer;transition:.15s}
+  .seg button.active{background:var(--accent);color:#0d1117}
+  .seg.strat button.active{background:var(--accent3);color:#0d1117}
+
+  .orient-row{display:flex;justify-content:space-between;font-size:10px;color:#6b7681;margin-top:5px;padding:0 2px}
+
+  .chk{display:flex !important;align-items:center;gap:8px;justify-content:flex-start !important;
+    color:#e6edf3 !important;cursor:pointer;font-size:12.5px !important}
+  .chk input{accent-color:var(--accent);width:15px;height:15px}
+  .chk output{margin-left:auto;color:#8b949e !important}
+
+  .optimize{border-top:1px solid #21262d}
+  #optimize-btn{width:100%;background:linear-gradient(135deg,#00C896,#0891B2);border:none;color:#06231c;
+    font-size:13px;font-weight:700;padding:12px;border-radius:9px;cursor:pointer;transition:.15s;margin-top:12px}
+  #optimize-btn:hover{filter:brightness(1.1)}
+  #optimize-btn:disabled{opacity:.6;cursor:wait}
+
+  .export-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .btn-sec{background:#1c2333;border:1px solid #2a3441;color:#b8c2cc;font-size:12px;font-weight:600;
+    padding:10px;border-radius:8px;cursor:pointer;transition:.15s}
+  .btn-sec:hover{border-color:var(--accent3);color:var(--accent3)}
+
+  #readout{padding:15px 0;border-top:1px solid #21262d;display:grid;gap:9px}
+  .metric{display:flex;justify-content:space-between;align-items:center}
+  .m-label{font-size:12px;color:#8b949e}
+  .m-val{font-size:14px;font-weight:700;font-variant-numeric:tabular-nums}
+
+  #annual-panel,#heat-panel,#sunpath-panel{padding:15px 0;border-top:1px solid #21262d}
+  .heatbar{height:10px;border-radius:5px;background:linear-gradient(90deg,#3a86d8,#3fb950 33%,#f5a623 66%,#e8533a)}
+  .heatbar-l{display:flex;justify-content:space-between;font-size:10.5px;color:#8b949e;margin-top:4px}
+  #sunpath{width:100%;height:auto;border-radius:8px;display:block}
+  .annual-head{font-size:13px;font-weight:600;margin-bottom:12px}
+  .annual-bars{display:grid;gap:8px}
+  .abar{display:grid;grid-template-columns:100px 1fr 56px;align-items:center;gap:8px}
+  .abar-l{font-size:11px;color:#8b949e}
+  .abar-track{height:7px;background:#1c2333;border-radius:5px;overflow:hidden}
+  .abar-fill{height:100%;border-radius:5px;transition:width .4s ease;width:0%}
+  .abar-fill.sun{background:linear-gradient(90deg,#f5a623,#ffd24a)}
+  .abar-fill.shade{background:linear-gradient(90deg,#3a86d8,#46506b)}
+  .abar-v{font-size:11.5px;font-weight:700;text-align:right;font-variant-numeric:tabular-nums}
+  .annual-note{font-size:10.5px;color:#6b7681;line-height:1.45;margin-top:10px}
+
+  #reco{background:#1c2333;border:1px solid #2a3441;border-radius:11px;padding:14px;margin-top:14px;border-left:3px solid var(--accent)}
+  .reco-head{font-size:10px;letter-spacing:2px;color:var(--accent);font-weight:700;margin-bottom:7px}
+  #reco-text{font-size:12.5px;line-height:1.55;color:#c9d3dd}
+
+  #panel footer{margin-top:16px;font-size:10px;color:#5a636e;line-height:1.5}
+
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#14323f;color:#fff;
+    padding:12px 20px;border-radius:8px;font-size:13px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.4);
+    border-left:3px solid var(--accent);z-index:1000;animation:tin .3s ease}
+  @keyframes tin{from{opacity:0;transform:translate(-50%,10px)}to{opacity:1;transform:translateX(-50%)}}
+
+  @media (max-width:780px){
+    #app{grid-template-columns:1fr;grid-template-rows:46vh 1fr}
+    #panel{border-left:none;border-top:1px solid #21262d}
+    #overlay-top{max-width:60%}
+  }
+</style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  const wrap=document.getElementById('canvas-wrap');
+  let W=wrap.clientWidth,H=wrap.clientHeight;
+
+  const scene=new THREE.Scene();
+  scene.fog=new THREE.Fog(0x0d1117,20,46);
+  const cam=new THREE.PerspectiveCamera(45,W/H,0.1,200);
+  cam.position.set(9,7,11);
+
+  const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
+  renderer.setSize(W,H);renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+  wrap.appendChild(renderer.domElement);
+
+  const ground=new THREE.Mesh(new THREE.CircleGeometry(20,64),
+    new THREE.MeshStandardMaterial({color:0x161b22,roughness:.95}));
+  ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
+  const grid=new THREE.GridHelper(40,40,0x2a3441,0x1c2333);grid.position.y=0.01;scene.add(grid);
+
+  function compass(txt,x,z,color){
+    const c=document.createElement('canvas');c.width=64;c.height=64;
+    const ctx=c.getContext('2d');ctx.fillStyle=color;ctx.font='bold 44px sans-serif';
+    ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(txt,32,34);
+    const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),transparent:true}));
+    sp.position.set(x,0.15,z);sp.scale.set(1.4,1.4,1);scene.add(sp);
+  }
+  compass('N',0,-9,'#e8533a');compass('S',0,9,'#8b949e');compass('E',9,0,'#8b949e');compass('O',-9,0,'#8b949e');
+
+  // ---------- Building ----------
+  const building=new THREE.Group();building.name='Edificio';scene.add(building);
+  const wallMat=new THREE.MeshStandardMaterial({color:0x3a4658,roughness:.8});
+  const sideMat=new THREE.MeshStandardMaterial({color:0x2f3a49,roughness:.85});
+  const aleroMat=new THREE.MeshStandardMaterial({color:0x4a5666,roughness:.7});
+  const lamaMat=new THREE.MeshStandardMaterial({color:0x5a6776,roughness:.7});
+  const finMat=new THREE.MeshStandardMaterial({color:0x4a5666,roughness:.7});
+  const glassMat=new THREE.MeshStandardMaterial({color:0x3fb950,transparent:true,opacity:.5,
+    emissive:0x3fb950,emissiveIntensity:.3,roughness:.2,side:THREE.DoubleSide});
+
+  const WALL_W=4,WALL_H=3,WALL_T=0.3,ROOM_D=3,OP_CY=1.5;
+  let OP_W=1.6,OP_H=1.4;
+  let glass, alero, lamas, parasoles, sampleGroup;
+  let occluders=[];
+
+  const HEAT_NX=16,HEAT_NY=12;
+  const heatCanvas=document.createElement('canvas');heatCanvas.width=HEAT_NX*12;heatCanvas.height=HEAT_NY*12;
+  const heatTex=new THREE.CanvasTexture(heatCanvas);
+  let heatMesh=null;
+
+  function buildRoom(){
+    while(building.children.length) building.remove(building.children[0]);
+    occluders=[];
+
+    const opB=OP_CY-OP_H/2, opT=OP_CY+OP_H/2;
+    function panel(w,h,x,y,name){
+      const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,WALL_T),wallMat);
+      m.position.set(x,y,0);m.castShadow=true;m.receiveShadow=true;m.name=name;return m;
+    }
+    if(opB>0.01) building.add(panel(WALL_W,opB,0,opB/2,'Antepecho'));
+    if(WALL_H-opT>0.01) building.add(panel(WALL_W,WALL_H-opT,0,opT+(WALL_H-opT)/2,'Dintel'));
+    const sideStrip=(WALL_W-OP_W)/2;
+    building.add(panel(sideStrip,OP_H,-(OP_W/2+sideStrip/2),OP_CY,'Jamba_izq'));
+    building.add(panel(sideStrip,OP_H,(OP_W/2+sideStrip/2),OP_CY,'Jamba_der'));
+
+    const sideL=new THREE.Mesh(new THREE.BoxGeometry(WALL_T,WALL_H,ROOM_D),sideMat);
+    sideL.position.set(-WALL_W/2,WALL_H/2,-ROOM_D/2);sideL.castShadow=sideL.receiveShadow=true;sideL.name='Muro_izq';building.add(sideL);
+    const sideR=sideL.clone();sideR.position.x=WALL_W/2;sideR.name='Muro_der';building.add(sideR);
+    const back=new THREE.Mesh(new THREE.BoxGeometry(WALL_W,WALL_H,WALL_T),sideMat);
+    back.position.set(0,WALL_H/2,-ROOM_D);back.castShadow=back.receiveShadow=true;back.name='Muro_post';building.add(back);
+    const roof=new THREE.Mesh(new THREE.BoxGeometry(WALL_W,WALL_T,ROOM_D+WALL_T),sideMat);
+    roof.position.set(0,WALL_H,-ROOM_D/2);roof.castShadow=true;roof.name='Techo';building.add(roof);
+    const floorIn=new THREE.Mesh(new THREE.BoxGeometry(WALL_W,WALL_T,ROOM_D),
+      new THREE.MeshStandardMaterial({color:0x222b36,roughness:.9}));
+    floorIn.position.set(0,WALL_T/2,-ROOM_D/2);floorIn.receiveShadow=true;floorIn.name='Piso';building.add(floorIn);
+
+    glass=new THREE.Mesh(new THREE.PlaneGeometry(OP_W,OP_H),glassMat);
+    glass.position.set(0,OP_CY,0.02);glass.name='Vidrio';building.add(glass);
+
+    // mapa de calor anual (se rellena en la vista "Mapa anual")
+    heatMesh=new THREE.Mesh(new THREE.PlaneGeometry(OP_W,OP_H),
+      new THREE.MeshBasicMaterial({map:heatTex,transparent:true,opacity:.92,depthWrite:false}));
+    heatMesh.position.set(0,OP_CY,0.03);heatMesh.name='_skip_heat';heatMesh.visible=false;building.add(heatMesh);
+
+    // alero
+    alero=new THREE.Mesh(new THREE.BoxGeometry(OP_W+0.6,0.08,0.6),aleroMat);
+    alero.position.set(0,opT+0.06,0.3);alero.castShadow=true;alero.visible=false;alero.name='Alero';building.add(alero);
+    occluders.push(alero);
+
+    // lamas horizontales (group; rebuilt with N elements)
+    lamas=new THREE.Group();lamas.name='Lamas_horizontales';building.add(lamas);
+    rebuildLamas();
+
+    // parasoles verticales (group; rebuilt with N elements)
+    parasoles=new THREE.Group();parasoles.name='Parasoles_verticales';building.add(parasoles);
+    rebuildParasoles();
+
+    // sample points on the glass
+    sampleGroup=new THREE.Group();sampleGroup.name='_skip_samplePts';building.add(sampleGroup);
+    samplePts=[];
+    const nx=4,ny=4;
+    for(let i=0;i<nx;i++)for(let j=0;j<ny;j++){
+      const lx=(-OP_W/2)+(OP_W*(i+0.5)/nx);
+      const ly=OP_CY-OP_H/2+(OP_H*(j+0.5)/ny);
+      const dot=new THREE.Mesh(new THREE.SphereGeometry(0.04,8,8),
+        new THREE.MeshBasicMaterial({color:0xffd24a}));
+      dot.position.set(lx,ly,0.04);dot.name='_skip_pt';sampleGroup.add(dot);
+      samplePts.push({mesh:dot,local:new THREE.Vector3(lx,ly,0.04)});
+    }
+    sampleGroup.visible=false;
+  }
+
+  function rebuildLamas(){
+    // remove previous lamas from occluders
+    occluders=occluders.filter(o=>!o.name||!o.name.startsWith('Lama_'));
+    while(lamas.children.length) lamas.remove(lamas.children[0]);
+    const N=stt.lamasN, D=stt.lamasLen;
+    if(N<1||D<=0) return;
+    const ymin=OP_CY-OP_H/2, ymax=OP_CY+OP_H/2;
+    for(let i=0;i<N;i++){
+      const t = N===1 ? 0.5 : i/(N-1);
+      const y = ymin + t*(ymax-ymin);
+      const lama=new THREE.Mesh(new THREE.BoxGeometry(OP_W+0.05,0.04,D),lamaMat);
+      lama.position.set(0,y,D/2);
+      lama.castShadow=true;
+      lama.name='Lama_'+(i+1);
+      lamas.add(lama);
+      occluders.push(lama);
+    }
+  }
+
+  function rebuildParasoles(){
+    occluders=occluders.filter(o=>!o.name||!o.name.startsWith('Parasol_'));
+    while(parasoles.children.length) parasoles.remove(parasoles.children[0]);
+    const N=stt.parasolN, D=stt.parasolLen;
+    if(N<1||D<=0) return;
+    const xmin=-OP_W/2, xmax=OP_W/2;
+    for(let i=0;i<N;i++){
+      const t = N===1 ? 0.5 : i/(N-1);
+      const x = xmin + t*(xmax-xmin);
+      const fin=new THREE.Mesh(new THREE.BoxGeometry(0.06,OP_H+0.05,D),finMat);
+      fin.position.set(x,OP_CY,D/2);
+      fin.castShadow=true;
+      fin.name='Parasol_'+(i+1);
+      parasoles.add(fin);
+      occluders.push(fin);
+    }
+  }
+
+  let samplePts=[];
+
+  // ---------- Sun ----------
+  const sun=new THREE.DirectionalLight(0xfff2d6,2.2);
+  sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
+  sun.shadow.camera.near=0.5;sun.shadow.camera.far=60;
+  sun.shadow.camera.left=-12;sun.shadow.camera.right=12;sun.shadow.camera.top=12;sun.shadow.camera.bottom=-12;
+  scene.add(sun);scene.add(sun.target);
+  const sunSphere=new THREE.Mesh(new THREE.SphereGeometry(0.5,24,24),new THREE.MeshBasicMaterial({color:0xffd24a}));
+  scene.add(sunSphere);
+  const sunGlow=new THREE.Mesh(new THREE.SphereGeometry(0.9,24,24),
+    new THREE.MeshBasicMaterial({color:0xffd24a,transparent:true,opacity:.18}));scene.add(sunGlow);
+  const rayLine=new THREE.Line(new THREE.BufferGeometry(),
+    new THREE.LineBasicMaterial({color:0xffd24a,transparent:true,opacity:.3}));scene.add(rayLine);
+  scene.add(new THREE.AmbientLight(0x4a5a70,0.55));
+  scene.add(new THREE.HemisphereLight(0x6688aa,0x12161d,0.5));
+
+  // ---------- Solar position (Spencer/NOAA) ----------
+  const rad=Math.PI/180,deg=180/Math.PI;
+  function solarPos(lat,lon,doy,hour){
+    const g=2*Math.PI/365*(doy-1+(hour-12)/24);
+    const decl=0.006918-0.399912*Math.cos(g)+0.070257*Math.sin(g)-0.006758*Math.cos(2*g)
+      +0.000907*Math.sin(2*g)-0.002697*Math.cos(3*g)+0.00148*Math.sin(3*g);
+    const eot=229.18*(0.000075+0.001868*Math.cos(g)-0.032077*Math.sin(g)-0.014615*Math.cos(2*g)-0.040849*Math.sin(2*g));
+    const lstm=15*Math.round(lon/15);
+    const tc=4*(lon-lstm)+eot;
+    const lst=hour+tc/60;
+    const hra=15*(lst-12)*rad;
+    const latR=lat*rad;
+    const elev=Math.asin(Math.sin(latR)*Math.sin(decl)+Math.cos(latR)*Math.cos(decl)*Math.cos(hra));
+    let az=Math.atan2(Math.sin(hra),Math.cos(hra)*Math.sin(latR)-Math.tan(decl)*Math.cos(latR));
+    az=(az*deg+180)%360;
+    return {elev:elev*deg,azimuth:az};
+  }
+  function sunVecWorld(az,el){
+    const a=az*rad,e=el*rad;
+    return new THREE.Vector3(Math.sin(a)*Math.cos(e),Math.sin(e),-Math.cos(a)*Math.cos(e));
+  }
+
+  const stt={lat:-12.05,lon:-77.04,doy:172,hour:12,orient:0,
+    alero:false,aleroLen:0.6,
+    lamasN:0,lamasLen:0.4,
+    parasolN:0,parasolLen:0.4,
+    vw:1.6,vh:1.4,view:'instant',strat:'gain',
+    locName:'Lima, Perú'};
+
+  // ---------- EPW ----------
+  let epw=null;
+  function parseEPW(text){
+    const lines=text.split(/\r?\n/);
+    let dataStart=0;
+    for(let i=0;i<lines.length;i++){ if(/^\d{4},\d/.test(lines[i])){dataStart=i;break;} }
+    const ghi=[],tdb=[];
+    for(let i=dataStart;i<lines.length;i++){
+      const c=lines[i].split(',');
+      if(c.length<15) continue;
+      const v=parseFloat(c[13]);
+      ghi.push(isNaN(v)?0:v);
+      const t=parseFloat(c[6]);
+      tdb.push(isNaN(t)?20:t);
+    }
+    // clase térmica por día (EPW): media diaria <18 °C = frío (el sol ayuda), >=22 °C = calor (el sol sobra), entre ambos = neutro
+    const dayClass=[];
+    if(tdb.length>=8000){
+      for(let d=0;d<365;d++){
+        let m=0;for(let k=0;k<24;k++) m+=tdb[d*24+k];
+        m/=24;
+        dayClass.push(m<18?'C':(m>=22?'H':'N'));
+      }
+    }
+    return ghi.length>=8000 ? {ghi, tdb, dayClass, present:true} : null;
+  }
+
+  // ---------- Raycasting shading ----------
+  const rc=new THREE.Raycaster();
+  function pointLit(worldPt, sunDir){
+    rc.set(worldPt.clone().addScaledVector(sunDir,0.02), sunDir);
+    rc.far=12;
+    const hits=rc.intersectObjects(occluders.filter(o=>o.visible),false);
+    return hits.length===0;
+  }
+  function litFraction(sunDir){
+    if(!samplePts.length) return 1;
+    let lit=0;
+    building.updateMatrixWorld(true);
+    for(const sp of samplePts){
+      const wp=sp.local.clone().applyMatrix4(building.matrixWorld);
+      const ok=pointLit(wp,sunDir);
+      sp.mesh.material.color.setHex(ok?0xffd24a:0x46506b);
+      if(ok) lit++;
+    }
+    return lit/samplePts.length;
+  }
+
+  // ---------- Evaluate instant ----------
+  function evaluate(){
+    const sp=solarPos(stt.lat,stt.lon,stt.doy,stt.hour);
+    const elev=sp.elev,azi=sp.azimuth;
+    let incidence=0,facing=false,litFrac=0,load=0;
+    const oR=stt.orient*rad;
+    const nx=Math.sin(oR),nz=-Math.cos(oR);
+    if(elev>0){
+      const sv=sunVecWorld(azi,elev).normalize();
+      const dot=sv.x*nx+sv.z*nz;
+      if(dot>0){
+        facing=true;
+        incidence=Math.acos(Math.min(1,Math.max(-1,dot)))*deg;
+        litFrac=litFraction(sv);
+        load=Math.cos(incidence*rad)*(elev/90)*litFrac;
+        load=Math.max(0,Math.min(1,load));
+      }
+    }
+    if(!facing){
+      for(const sp2 of samplePts) sp2.mesh.material.color.setHex(0x46506b);
+    }
+    let cat,color,label;
+    if(elev<=0||!facing){cat='insuf';color=0x3a86d8;label='Insuficiente';}
+    else if(load>0.62){cat='over';color=0xe8533a;label='Sobreexpuesto';}
+    else if(load>0.32){cat='mod';color=0xf5a623;label='Moderado';}
+    else if(load>0.08){cat='opt';color=0x3fb950;label='Óptimo';}
+    else {cat='insuf';color=0x3a86d8;label='Insuficiente';}
+    return {elev,azi,incidence,load,facing,litFrac,cat,color,label};
+  }
+
+  // ---------- Sombra parcial por placas (alero, lamas, parasoles) ----------
+  // 3×3 puntos del vano. Cada protección se trata como placa horizontal (alero, lamas)
+  // o vertical (parasoles) de profundidad L; un punto queda en sombra si el rayo solar choca con una placa.
+  function plateShadeFrac(sv,oR,horiz){
+    const lamaSpace = stt.lamasN>=2 ? OP_H/(stt.lamasN-1) : 0;
+    const finSpace  = stt.parasolN>=2 ? OP_W/(stt.parasolN-1) : 0;
+    const tanP=sv.y/horiz;                                   // pendiente del rayo en el plano vertical
+    const latC=sv.x*Math.cos(oR)+sv.z*Math.sin(oR);          // componente lateral (a lo largo de la fachada)
+    const tanO=Math.abs(latC)/horiz;                         // pendiente lateral
+    let nSh=0;
+    for(let iy=-1;iy<=1;iy++){
+      const v=iy*OP_H/3;
+      for(let ix=-1;ix<=1;ix++){
+        const u=ix*OP_W/3;
+        let sh=false;
+        if(stt.alero && (OP_H/2+0.06-v) <= stt.aleroLen*tanP) sh=true;
+        if(!sh && stt.lamasN>=2 && stt.lamasLen>0){
+          const k=Math.ceil((v+OP_H/2)/lamaSpace-1e-9);          // primera lama a la altura del punto o por encima
+          if(k<=stt.lamasN-1){ const yj=-OP_H/2+k*lamaSpace; if(yj-v <= stt.lamasLen*tanP) sh=true; }
+        }
+        if(!sh && stt.parasolN>=2 && stt.parasolLen>0){
+          const sg=latC>=0?1:-1;
+          const k=sg>0 ? Math.ceil((u+OP_W/2)/finSpace-1e-9) : Math.floor((u+OP_W/2)/finSpace+1e-9);
+          if(k>=0 && k<=stt.parasolN-1){ const xj=-OP_W/2+k*finSpace; if(Math.abs(xj-u) <= stt.parasolLen*tanO) sh=true; }
+        }
+        if(sh) nSh++;
+      }
+    }
+    return nSh/9;
+  }
+
+  // ---------- Annual seasonal balance ----------
+  // Half-shadow heuristic for arrays:
+  //   - Alero: tan(profile) > aleroDV/aleroLen → shaded
+  //   - Lamas (N≥2 horizontal louvers in front of window): spacing = OP_H/(N-1).
+  //     tan(profile) > spacing/(2*lamasLen) → midpoint between consecutive lamas is shaded
+  //   - Parasoles (N≥2 vertical fins across width): spacing = OP_W/(N-1).
+  //     tan(offN) > spacing/(2*parasolLen) → midpoint between consecutive fins is shaded
+  function annualBalanceSeasonal(){
+    let sunW=0,shadeW=0,sunS=0,shadeS=0,sunN=0,shadeN=0;
+    let wsC=0,wshC=0,wsH=0,wshH=0;  // pesos de puntaje: exposición real sobre la fachada (≈ coseno de incidencia o GHI)
+    const isSH=stt.lat<0;
+    const tropical=Math.abs(stt.lat)<8;
+    const oR=stt.orient*rad, nx=Math.sin(oR),nz=-Math.cos(oR);
+    const opT=OP_CY+OP_H/2;
+    const aleroDV=opT-OP_CY+0.06;
+    const lamaSpace = stt.lamasN>=2 ? OP_H/(stt.lamasN-1) : 0;
+    const finSpace  = stt.parasolN>=2 ? OP_W/(stt.parasolN-1) : 0;
+
+    for(let doy=1;doy<=365;doy+=2){
+      let cls;  // 'C' frío (sol útil) · 'H' calor (sol excesivo) · 'N' neutro
+      let isWinter;
+      if(tropical){
+        isWinter = isSH ? (doy>=91 && doy<=243) : (doy<=60 || doy>=305);
+      } else if(isSH){
+        isWinter = doy>=121 && doy<=243;
+      } else {
+        isWinter = doy<=60 || doy>=305;
+      }
+      // con EPW la clase sale de la temperatura real; sin EPW se usa la ventana de calendario (invierno=frío, resto=calor)
+      cls = (epw&&epw.dayClass&&epw.dayClass.length===365) ? epw.dayClass[Math.min(364,doy-1)] : (isWinter?'C':'H');
+      for(let h=0;h<24;h++){
+        const sp=solarPos(stt.lat,stt.lon,doy,h);
+        if(sp.elev<=0) continue;
+        const sv=sunVecWorld(sp.azimuth,sp.elev).normalize();
+        const horiz=sv.x*nx+sv.z*nz;
+        if(horiz<=0) continue;
+
+        let w=1;
+        if(epw&&epw.present){
+          const gi=Math.min(8759,(doy-1)*24+h);
+          w=Math.max(0,epw.ghi[gi]||0)/900;
+          if(w<=0) continue;
+        }
+        const fr=plateShadeFrac(sv,oR,horiz);                     // fracción sombreada del vano en esa hora
+        const wt=(epw&&epw.present)?w:horiz;
+        if(cls==='C'){ shadeW+=w*fr; sunW+=w*(1-fr); wshC+=wt*fr; wsC+=wt*(1-fr); }
+        else if(cls==='H'){ shadeS+=w*fr; sunS+=w*(1-fr); wshH+=wt*fr; wsH+=wt*(1-fr); }
+        else { shadeN+=w*fr; sunN+=w*(1-fr); }
+      }
+    }
+    const s=2;
+    return {
+      sunW:Math.round(sunW*s), shadeW:Math.round(shadeW*s),
+      sunS:Math.round(sunS*s), shadeS:Math.round(shadeS*s),
+      sunN:Math.round(sunN*s), shadeN:Math.round(shadeN*s),
+      sun:Math.round((sunW+sunS+sunN)*s), shade:Math.round((shadeW+shadeS+shadeN)*s),
+      lit:Math.round((sunW+sunS+sunN+shadeW+shadeS+shadeN)*s),
+      wsC:wsC*s, wshC:wshC*s, wsH:wsH*s, wshH:wshH*s,
+      fuente:(epw&&epw.dayClass&&epw.dayClass.length===365)?'EPW':'calendario'
+    };
+  }
+
+  // ---------- Optimizer (strategy-aware, verified) ----------
+  function optimize(strategy){
+    let best=null;
+    const sweep_vw=[1.0,1.4,1.8,2.2,2.6,3.0];
+    const sweep_vh=[1.0,1.4,1.8,2.2];
+    // protection profiles: {aL, lN, lL, pN, pL}
+    const profiles=[
+      {aL:0,   lN:0, lL:0.4, pN:0, pL:0.4},   // sin protección
+      {aL:0.4, lN:0, lL:0.4, pN:0, pL:0.4},
+      {aL:0.6, lN:0, lL:0.4, pN:0, pL:0.4},
+      {aL:0.9, lN:0, lL:0.4, pN:0, pL:0.4},
+      {aL:0,   lN:0, lL:0.4, pN:2, pL:0.4},
+      {aL:0,   lN:0, lL:0.4, pN:2, pL:0.6},
+      {aL:0,   lN:0, lL:0.4, pN:4, pL:0.4},
+      {aL:0,   lN:2, lL:0.4, pN:0, pL:0.4},
+      {aL:0,   lN:4, lL:0.4, pN:0, pL:0.4},
+      {aL:0,   lN:4, lL:0.6, pN:0, pL:0.4},
+      {aL:0.6, lN:0, lL:0.4, pN:2, pL:0.4},
+      {aL:0.6, lN:0, lL:0.4, pN:4, pL:0.4},
+      {aL:0,   lN:4, lL:0.4, pN:4, pL:0.4}    // brise-soleil cuadricular
+    ];
+
+    for(const vw of sweep_vw)
+    for(const vh of sweep_vh)
+    for(const p of profiles){
+      stt.vw=vw; stt.vh=vh;
+      stt.alero=p.aL>0; stt.aleroLen=p.aL||0.6;
+      stt.lamasN=p.lN; stt.lamasLen=p.lL;
+      stt.parasolN=p.pN; stt.parasolLen=p.pL;
+      OP_W=vw; OP_H=vh;
+      const b=annualBalanceSeasonal();
+      if(b.lit<10) continue;
+      const area=vw*vh;
+      // exposición ponderada del periodo frío (C) y del calor (H), con y sin protección
+      const coldTot=b.wsC+b.wshC, hotTot=b.wsH+b.wshH;
+      const coldKeep=coldTot>0 ? b.wsC/coldTot : 0;      // fracción del sol frío que se conserva
+      const hotCut  =hotTot>0  ? b.wshH/hotTot : 0;      // fracción del sol cálido que se corta
+      const allTot=coldTot+hotTot;
+      let score=0;
+      if(strategy==='gain'){
+        const areaTerm=Math.min(area,6.6)/6.6;
+        const totalSunFrac=allTot ? (b.wsC+b.wsH)/allTot : 0;
+        score=areaTerm*0.45 + totalSunFrac*0.40 + coldKeep*0.15;
+      } else if(strategy==='reduce'){
+        const areaTerm=Math.min(area,2.5)/2.5;
+        score=areaTerm*0.10 + hotCut*0.65 + (coldTot>0?coldKeep:1)*0.25;
+      } else {
+        // equilibrio en horas ponderadas: sol frío conservado menos sol cálido que pasa, sobre el total posible
+        const net = allTot ? (b.wsC - b.wsH)/allTot : 0;   // -1 … 1
+        const areaTerm=Math.min(area,4.0)/4.0;
+        score=areaTerm*0.25 + (net+1)/2*0.75;
+      }
+      if(!best||score>best.score){
+        best={vw,vh,...p,score:+score.toFixed(3),
+              sunW:b.sunW,shadeW:b.shadeW,sunS:b.sunS,shadeS:b.shadeS,
+              sun:b.sun,shade:b.shade,lit:b.lit,
+              coldKeep:coldKeep,hotCut:hotCut,coldTot:coldTot,hotTot:hotTot,fuente:b.fuente};
+      }
+    }
+    stt.vw=best.vw; stt.vh=best.vh;
+    stt.alero=best.aL>0; stt.aleroLen=best.aL||0.6;
+    stt.lamasN=best.lN; stt.lamasLen=best.lL;
+    stt.parasolN=best.pN; stt.parasolLen=best.pL;
+    OP_W=best.vw; OP_H=best.vh;
+    return best;
+  }
+
+  function recommend(ev,ann){
+    if(ev.elev<=0) return 'El sol está bajo el horizonte. El vano depende de luz difusa a esta hora.';
+    if(!ev.facing) return 'La fachada está en sombra propia: el sol incide por detrás. Bueno para evitar carga térmica; verifica que entre luz difusa suficiente.';
+    let base='';
+    if(ev.cat==='over'){
+      base='Sobreexposición directa. ';
+      if(!stt.alero&&stt.lamasN===0&&ev.elev>35) base+='Un alero o lamas cortarían el sol alto. ';
+      if(stt.parasolN<2&&ev.incidence>40) base+='Parasoles verticales ayudarían con el sol oblicuo. ';
+    } else if(ev.cat==='mod'){ base='Exposición moderada y controlable. Buen rango si buscas luz sin recalentar. ';
+    } else if(ev.cat==='opt'){ base='Exposición óptima: luz sin sobrecalentamiento. ';
+    } else { base='Poca incidencia directa. Si falta luz, amplía o reorienta el vano. '; }
+    if(ann){
+      base+=`Anual: ${ann.sunW} h sol invierno · ${ann.sunS} h sol verano`;
+      if(ann.shade>0) base+=` · ${ann.shade} h cortadas por protección`;
+      base+='.';
+    }
+    return base.trim();
+  }
+
+  // ---------- OBJ Exporter ----------
+  function exportOBJ(){
+    const lines=[
+      '# Visualizador Solar de Vanos — MALI · Módulo 3 · v3',
+      '# Geometría exportada en metros, sistema Y-up.',
+      `# Ubicación: ${stt.locName}  (lat ${stt.lat.toFixed(2)}, lon ${stt.lon.toFixed(2)})`,
+      `# Vano: ${stt.vw.toFixed(2)} x ${stt.vh.toFixed(2)} m · orientación ${$('orient-val').textContent}`,
+      `# Alero: ${stt.alero?stt.aleroLen.toFixed(2)+' m':'no'}`,
+      `# Lamas: ${stt.lamasN>0?stt.lamasN+' × '+stt.lamasLen.toFixed(2)+' m':'no'}`,
+      `# Parasoles: ${stt.parasolN>0?stt.parasolN+' × '+stt.parasolLen.toFixed(2)+' m':'no'}`,
+      ''
+    ];
+    let vOff=1, vnOff=1;
+    const tmp=new THREE.Vector3();
+    const tmpN=new THREE.Vector3();
+    building.updateMatrixWorld(true);
+
+    building.traverse(obj=>{
+      if(!obj.isMesh || !obj.visible) return;
+      if((obj.name||'').startsWith('_skip_')) return;
+      const geom=obj.geometry;
+      const matWorld=obj.matrixWorld;
+      const pos=geom.attributes.position;
+      const norm=geom.attributes.normal;
+      const idx=geom.index;
+      if(!pos) return;
+      lines.push('o '+(obj.name||'Mesh'));
+      for(let i=0;i<pos.count;i++){
+        tmp.fromBufferAttribute(pos,i).applyMatrix4(matWorld);
+        lines.push(`v ${tmp.x.toFixed(5)} ${tmp.y.toFixed(5)} ${tmp.z.toFixed(5)}`);
+      }
+      const normMat=new THREE.Matrix3().getNormalMatrix(matWorld);
+      if(norm){
+        for(let i=0;i<norm.count;i++){
+          tmpN.fromBufferAttribute(norm,i).applyMatrix3(normMat).normalize();
+          lines.push(`vn ${tmpN.x.toFixed(5)} ${tmpN.y.toFixed(5)} ${tmpN.z.toFixed(5)}`);
+        }
+      }
+      if(idx){
+        for(let i=0;i<idx.count;i+=3){
+          const a=idx.getX(i)+vOff, b=idx.getX(i+1)+vOff, c=idx.getX(i+2)+vOff;
+          if(norm){
+            const an=idx.getX(i)+vnOff, bn=idx.getX(i+1)+vnOff, cn=idx.getX(i+2)+vnOff;
+            lines.push(`f ${a}//${an} ${b}//${bn} ${c}//${cn}`);
+          } else { lines.push(`f ${a} ${b} ${c}`); }
+        }
+      } else {
+        for(let i=0;i<pos.count;i+=3){
+          if(norm) lines.push(`f ${i+vOff}//${i+vnOff} ${i+1+vOff}//${i+1+vnOff} ${i+2+vOff}//${i+2+vnOff}`);
+          else     lines.push(`f ${i+vOff} ${i+1+vOff} ${i+2+vOff}`);
+        }
+      }
+      vOff += pos.count;
+      if(norm) vnOff += norm.count;
+      lines.push('');
+    });
+
+    const blob=new Blob([lines.join('\n')],{type:'text/plain'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    const dir=$('orient-val').textContent.toLowerCase().replace(/\s/g,'');
+    const loc=(stt.locName.split(',')[0]||'sitio').toLowerCase();
+    a.href=url; a.download=`vano_${loc}_${stt.vw.toFixed(1)}x${stt.vh.toFixed(1)}m_${dir}.obj`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast('OBJ exportado · listo para SketchUp/Rhino/Blender');
+  }
+
+  function exportJSON(){
+    const ev=evaluate(), ann=annualBalanceSeasonal();
+    const data={
+      tool:'Visualizador Solar de Vanos · MALI M3 v3',
+      timestamp:new Date().toISOString(),
+      ubicacion:{nombre:stt.locName, lat:stt.lat, lon:stt.lon},
+      vano:{ancho_m:stt.vw, alto_m:stt.vh, area_m2:+(stt.vw*stt.vh).toFixed(2),
+            orientacion:$('orient-val').textContent, azimut_normal_deg:stt.orient},
+      proteccion:{
+        alero:stt.alero?{profundidad_m:stt.aleroLen}:null,
+        lamas:stt.lamasN>0?{cantidad:stt.lamasN,profundidad_m:stt.lamasLen,
+                            espaciamiento_m:stt.lamasN>=2?+(OP_H/(stt.lamasN-1)).toFixed(2):null}:null,
+        parasoles:stt.parasolN>0?{cantidad:stt.parasolN,profundidad_m:stt.parasolLen,
+                                  espaciamiento_m:stt.parasolN>=2?+(OP_W/(stt.parasolN-1)).toFixed(2):null}:null
+      },
+      estrategia_bioclimatica:stt.strat,
+      datos_climaticos:epw?'EPW cargado':'modelo NOAA sintético',
+      instante:{
+        doy:stt.doy, hora:stt.hour,
+        altura_solar_deg:+ev.elev.toFixed(2),
+        azimut_solar_deg:+ev.azi.toFixed(2),
+        incidencia_deg:+ev.incidence.toFixed(2),
+        carga_normalizada:+ev.load.toFixed(3),
+        fraccion_sombreada:+(1-ev.litFrac).toFixed(3),
+        estado:ev.label
+      },
+      balance_anual_horas:{
+        sol_invierno:ann.sunW, sombra_invierno:ann.shadeW,
+        sol_verano:ann.sunS, sombra_verano:ann.shadeS,
+        total_iluminado:ann.lit, total_directo:ann.sun, total_cortado:ann.shade
+      }
+    };
+    const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    const loc=(stt.locName.split(',')[0]||'sitio').toLowerCase();
+    a.href=url; a.download=`analisis_vano_${loc}.json`;
+    a.click(); URL.revokeObjectURL(url);
+    toast('Análisis JSON exportado');
+  }
+
+  function toast(msg){
+    document.querySelectorAll('.toast').forEach(t=>t.remove());
+    const t=document.createElement('div');t.className='toast';t.textContent=msg;
+    document.body.appendChild(t);
+    setTimeout(()=>t.remove(),2400);
+  }
+
+  // ---------- Render update ----------
+  const $=id=>document.getElementById(id);
+  function refresh(){
+    building.rotation.y=Math.PI - stt.orient*rad;
+    alero.visible=stt.alero;
+    alero.position.z=0.05+stt.aleroLen/2;
+    alero.scale.z=stt.aleroLen/0.6;
+    sampleGroup.visible=(stt.view==='instant');
+
+    const ev=evaluate();
+    if(ev.elev>0){
+      const pos=sunVecWorld(ev.azi,ev.elev).multiplyScalar(14);
+      sun.position.copy(pos);sunSphere.position.copy(pos);sunGlow.position.copy(pos);
+      sunSphere.visible=sunGlow.visible=true;rayLine.visible=true;
+      sun.intensity=2.2*(0.3+0.7*ev.elev/90);
+      rayLine.geometry.setFromPoints([pos,new THREE.Vector3(0,OP_CY,0)]);
+    } else { sunSphere.visible=sunGlow.visible=rayLine.visible=false;sun.intensity=0.05; }
+    sun.target.position.set(0,OP_CY,0);
+
+    glassMat.color.setHex(ev.color);glassMat.emissive.setHex(ev.color);
+
+    const ann=annualBalanceSeasonal();
+    $('m-incid').textContent=ev.facing?Math.round(ev.incidence)+'°':'—';
+    $('m-alt').textContent=ev.elev>0?ev.elev.toFixed(1)+'°':'bajo horizonte';
+    $('m-azi').textContent=ev.elev>0?Math.round(ev.azi)+'°':'—';
+    $('m-shadepct').textContent=ev.facing?Math.round((1-ev.litFrac)*100)+'%':'—';
+    $('m-state').textContent=ev.label;
+    $('m-state').style.color='#'+ev.color.toString(16).padStart(6,'0');
+    $('sun-status').textContent=ev.elev>0?('Sol '+ev.elev.toFixed(0)+'° / '+Math.round(ev.azi)+'°'):'Sol bajo horizonte';
+
+    const maxH=Math.max(ann.lit,1);
+    $('ab-sunw').style.width=(100*ann.sunW/maxH)+'%';
+    $('ab-shadew').style.width=(100*ann.shadeW/maxH)+'%';
+    $('ab-suns').style.width=(100*ann.sunS/maxH)+'%';
+    $('ab-shades').style.width=(100*ann.shadeS/maxH)+'%';
+    $('ab-sunw-v').textContent=ann.sunW+' h';
+    $('ab-shadew-v').textContent=ann.shadeW+' h';
+    $('ab-suns-v').textContent=ann.sunS+' h';
+    $('ab-shades-v').textContent=ann.shadeS+' h';
+    $('reco-text').textContent=recommend(ev,ann);
+
+    updateAnnualView(ann);
+  }
+
+  function updateAnnualView(ann){
+    const annual=(stt.view==='annual');
+    $('heat-panel').style.display=annual?'':'none';
+    $('sunpath-panel').style.display=annual?'':'none';
+    if(annual){
+      glassMat.opacity=0.35;
+      if(heatMesh){ heatMesh.visible=true; heatMesh.material.opacity=(heatKey===heatSignature()&&heatRes)?0.92:0.3; }
+      clearTimeout(heatTimer); heatTimer=setTimeout(computeHeat,150);
+      drawSunPath();
+    } else {
+      glassMat.opacity=0.5;
+      if(heatMesh) heatMesh.visible=false;
+    }
+  }
+
+  // ---------- Mapa de calor anual del vano (rayos 3D) ----------
+  let heatTok=0,heatKey='',heatPend='',heatTimer=null,heatRes=null;
+  function heatSignature(){
+    return [stt.lat,stt.lon,stt.orient,stt.vw,stt.vh,stt.alero,stt.aleroLen,stt.lamasN,stt.lamasLen,
+            stt.parasolN,stt.parasolLen,(epw&&epw.present)?1:0].join('|');
+  }
+  function heatRamp(f){            // 0 azul · .33 verde · .66 ámbar · 1 rojo
+    const st=[[0,[58,134,216]],[.33,[63,185,80]],[.66,[245,166,35]],[1,[232,83,58]]];
+    f=Math.max(0,Math.min(1,f));
+    for(let i=1;i<st.length;i++) if(f<=st[i][0]){
+      const a=st[i-1],b=st[i],t=(f-a[0])/(b[0]-a[0]);
+      return a[1].map((c,k)=>Math.round(c+(b[1][k]-c)*t));
+    }
+    return st[3][1];
+  }
+  function applyHeat(){
+    const g=heatCanvas.getContext('2d'),cw=heatCanvas.width/HEAT_NX,ch=heatCanvas.height/HEAT_NY;
+    g.clearRect(0,0,heatCanvas.width,heatCanvas.height);
+    for(let j=0;j<HEAT_NY;j++)for(let i=0;i<HEAT_NX;i++){
+      const f=heatRes.lit[j*HEAT_NX+i], c=heatRamp(f);
+      g.fillStyle='rgb('+c.join(',')+')';
+      g.fillRect(i*cw,(HEAT_NY-1-j)*ch,cw+0.5,ch+0.5);
+    }
+    heatTex.needsUpdate=true;
+    if(heatMesh){ heatMesh.visible=(stt.view==='annual'); heatMesh.material.opacity=0.92; }
+    let mx=0,mn=1,sm=0;
+    for(const f of heatRes.lit){ if(f>mx)mx=f; if(f<mn)mn=f; sm+=f; }
+    const pc=f=>Math.round(f*100)+' %';
+    $('heat-note').textContent=
+      'Cada celda: porcentaje de las horas con sol de frente (unas '+Math.round(heatRes.hours)+' h al año) en que ese punto del vano recibe sol directo. '
+      +'Más expuesta: '+pc(mx)+' · más protegida: '+pc(mn)+' · media: '+pc(sm/heatRes.lit.length)+'. Cálculo con rayos 3D sobre tu protección.'
+      +((epw&&epw.present)?' Ponderado con la radiación del archivo climático.':'');
+  }
+  function computeHeat(){
+    const key=heatSignature();
+    if(key===heatKey && heatRes){ applyHeat(); return; }
+    if(key===heatPend) return;                       // ya hay un cálculo en curso para esta configuración
+    heatPend=key; const tok=++heatTok;
+    $('heat-note').textContent='Calculando con rayos 3D…';
+    building.updateMatrixWorld(true);
+    const oR=stt.orient*rad,nx=Math.sin(oR),nz=-Math.cos(oR);
+    const dirs=[];let totW=0;
+    for(let doy=1;doy<=365;doy+=6)for(let h=0;h<24;h++){
+      const sp=solarPos(stt.lat,stt.lon,doy,h); if(sp.elev<=0) continue;
+      const sv=sunVecWorld(sp.azimuth,sp.elev).normalize();
+      if(sv.x*nx+sv.z*nz<=0) continue;
+      let w=1;
+      if(epw&&epw.present){ w=Math.max(0,epw.ghi[Math.min(8759,(doy-1)*24+h)]||0)/900; if(w<=0) continue; }
+      dirs.push({sv,w}); totW+=w;
+    }
+    const pts=[];
+    for(let j=0;j<HEAT_NY;j++)for(let i=0;i<HEAT_NX;i++){
+      pts.push(new THREE.Vector3(-OP_W/2+OP_W*(i+.5)/HEAT_NX, OP_CY-OP_H/2+OP_H*(j+.5)/HEAT_NY, 0.04)
+               .applyMatrix4(building.matrixWorld));
+    }
+    const occ=occluders.filter(o=>o.visible);
+    const lit=new Array(pts.length).fill(0);
+    let pi=0;
+    function step(){
+      if(tok!==heatTok) return;
+      const t0=performance.now();
+      while(pi<pts.length && performance.now()-t0<12){
+        const P=pts[pi]; let acc=0;
+        for(const d of dirs){
+          rc.set(P.clone().addScaledVector(d.sv,0.02), d.sv); rc.far=12;
+          if(rc.intersectObjects(occ,false).length===0) acc+=d.w;
+        }
+        lit[pi]=totW?acc/totW:0; pi++;
+      }
+      if(pi<pts.length){ $('heat-note').textContent='Calculando con rayos 3D… '+Math.round(100*pi/pts.length)+' %'; setTimeout(step,0); }
+      else { heatRes={lit,hours:dirs.length*6}; heatKey=key; heatPend=''; applyHeat(); }
+    }
+    step();
+  }
+
+  // ---------- Trayectoria solar con la máscara de sombra de la protección ----------
+  function drawSunPath(){
+    const cv=$('sunpath'), g=cv.getContext('2d'), W=cv.width, H=cv.height;
+    const L=32,R=8,T=8,B=32, pw=W-L-R, ph=H-T-B, RM=100;
+    const X=rel=>L+(rel+RM)/(2*RM)*pw, Y=el=>T+ph-(el/90)*ph;
+    g.clearRect(0,0,W,H); g.fillStyle='#0d1117'; g.fillRect(0,0,W,H);
+    // fuera de la fachada (el sol incide por detrás)
+    g.fillStyle='#161b24';
+    g.fillRect(X(-RM),T,X(-90)-X(-RM),ph); g.fillRect(X(90),T,X(RM)-X(90),ph);
+    // máscara: fracción del vano en sombra para cada dirección del sol
+    const oR=stt.orient*rad, nx=Math.sin(oR), nz=-Math.cos(oR);
+    for(let rel=-90;rel<90;rel+=2)for(let el=0;el<90;el+=2){
+      const sv=sunVecWorld(stt.orient+rel+1,el+1).normalize();
+      const horiz=sv.x*nx+sv.z*nz; if(horiz<=0) continue;
+      const f=plateShadeFrac(sv,oR,horiz); if(f<=0) continue;
+      g.fillStyle='rgba(58,134,216,'+(0.6*f).toFixed(3)+')';
+      const x0=Math.round(X(rel)), x1=Math.round(X(rel+2)), y0=Math.round(Y(el+2)), y1=Math.round(Y(el));
+      g.fillRect(x0,y0,x1-x0,y1-y0);
+    }
+    // cuadrícula y ejes
+    g.strokeStyle='#2a3441'; g.lineWidth=1; g.fillStyle='#8b949e'; g.font='10px sans-serif';
+    g.textAlign='center';
+    for(let rel=-90;rel<=90;rel+=30){ g.beginPath(); g.moveTo(X(rel),T); g.lineTo(X(rel),T+ph); g.stroke(); g.fillText(rel+'°',X(rel),T+ph+14); }
+    g.textAlign='right';
+    for(let el=0;el<=90;el+=30){ g.beginPath(); g.moveTo(L,Y(el)); g.lineTo(L+pw,Y(el)); g.stroke(); g.fillText(el+'°',L-6,Y(el)+4); }
+    g.textAlign='center'; g.fillText('azimut respecto a la fachada (0° = de frente)',L+pw/2,H-4);
+    g.save(); g.translate(8,T+ph/2); g.rotate(-Math.PI/2); g.fillText('altura solar',0,0); g.restore();
+    // trayectorias
+    const paths=[[355,'21 dic','#f5a623'],[80,'equinoccios','#3fb950'],[172,'21 jun','#58a6ff']];
+    let ly=T+12;
+    for(const [doy,label,col] of paths){
+      g.strokeStyle=col; g.lineWidth=2; g.beginPath(); let st=false;
+      for(let h=4;h<=20.01;h+=0.25){
+        const sp=solarPos(stt.lat,stt.lon,doy,h);
+        const rel=((sp.azimuth-stt.orient+540)%360)-180;
+        if(sp.elev<=0||Math.abs(rel)>RM){ st=false; continue; }
+        if(!st){ g.moveTo(X(rel),Y(sp.elev)); st=true; } else g.lineTo(X(rel),Y(sp.elev));
+      }
+      g.stroke();
+      g.fillStyle=col; g.font='9px sans-serif';
+      for(let h=5;h<=19;h++){
+        const sp=solarPos(stt.lat,stt.lon,doy,h);
+        const rel=((sp.azimuth-stt.orient+540)%360)-180;
+        if(sp.elev<=0||Math.abs(rel)>RM) continue;
+        g.beginPath(); g.arc(X(rel),Y(sp.elev),2.4,0,6.2832); g.fill();
+        if(h%3===0){ g.textAlign='center'; g.fillText(h+' h',X(rel),Y(sp.elev)-6); }
+      }
+    }
+    // sol en el instante elegido
+    const cur=solarPos(stt.lat,stt.lon,stt.doy,stt.hour);
+    const crel=((cur.azimuth-stt.orient+540)%360)-180;
+    if(cur.elev>0&&Math.abs(crel)<=RM){
+      g.strokeStyle='#ffd24a'; g.lineWidth=2; g.fillStyle='rgba(255,210,74,.25)';
+      g.beginPath(); g.arc(X(crel),Y(cur.elev),6,0,6.2832); g.fill(); g.stroke();
+    }
+    const prot=stt.alero||stt.lamasN>=2||stt.parasolN>=2;
+    $('sunpath-note').textContent=prot
+      ? 'Curvas: naranja = 21 dic, verde = equinoccios, azul claro = 21 jun. La zona azul es la dirección del sol en que tu protección sombrea el vano (más intensa = más sombra). Donde una trayectoria cruza la zona azul, esas horas están protegidas. Círculo amarillo: el instante elegido. Horas en hora local.'
+      : 'Curvas: naranja = 21 dic, verde = equinoccios, azul claro = 21 jun. Sin protección activa: no hay zona de sombra. Agrega alero, lamas o parasoles, o usa el optimizador, para ver qué horas del año quedan protegidas. Horas en hora local.';
+  }
+
+  // ---------- Wiring ----------
+  function rebuildGeom(){ OP_W=stt.vw;OP_H=stt.vh;buildRoom();refresh(); }
+  function rebuildProtection(){ rebuildLamas();rebuildParasoles();refresh(); }
+
+  const presetZones={
+    'Lima':'Desierto costero subtropical (BWh). Sub-enfría buena parte del año; ganar sol es prioridad.',
+    'Iquitos':'Selva tropical (Af). Calor húmedo constante; cortar sol directo es prioridad.',
+    'Cusco':'Altoandino (Cwb). Noches frías, sol intenso de día; aprovechar inercia + ganancia.',
+    'Arequipa':'Semi-árido de altura (BWk). Oscilación térmica fuerte; equilibrar gain/loss.'
+  };
+
+  const ESTACIONES=[
+    ["Amazonas", "Chachapoyas (aeropuerto)", "844440", -6.202, -77.856, 2540, "2011-2025"],
+    ["Apurímac", "Andahuaylas (aeropuerto)", "846880", -13.706, -73.35, 3444, "2011-2025"],
+    ["Arequipa", "Arequipa-Rodriguez (aeropuerto)", "847520", -16.341, -71.583, 2562, "2011-2025"],
+    ["Ayacucho", "Ayacucho-Duarte (aeropuerto)", "846730", -13.155, -74.204, 2718, "2011-2025"],
+    ["Cajamarca", "Cajamarca-Iglesias (aeropuerto)", "844720", -7.139, -78.489, 2676, "2011-2025"],
+    ["Cajamarca", "Jaen", "844100", -5.583, -78.767, 755, "2011-2025"],
+    ["Cusco", "Cusco-Astete (aeropuerto)", "846860", -13.536, -71.939, 3310, "2011-2025"],
+    ["Cusco", "Quincemil (aeropuerto)", "846770", -13.267, -70.667, 634, "TMYx"],
+    ["Huánuco", "Huanuco-Fernandini (aeropuerto)", "845640", -9.879, -76.205, 1850, "2011-2025"],
+    ["Huánuco", "Tingo Maria", "845340", -9.133, -75.95, 665, "2011-2025"],
+    ["Ica", "Nazca-Reiche (aeropuerto)", "847200", -14.854, -74.962, 567, "2011-2025"],
+    ["Ica", "Pisco-Olivera (aeropuerto)", "846910", -13.745, -76.22, 12, "2011-2025"],
+    ["Ica", "San Juan de Marcona", "847210", -15.358, -75.135, 60, "TMYx"],
+    ["Junín", "Huancayo", "846330", -12.067, -75.233, 3350, "TMYx"],
+    ["Junín", "Huayao", "846300", -12.033, -75.317, 3350, "TMYx"],
+    ["Junín", "La Merced", "846030", -11.061, -75.333, 785, "TMYx"],
+    ["Junín", "La Oroya", "846130", -11.523, -75.899, 3754, "TMYx"],
+    ["Junín", "Mazamari", "845800", -11.333, -74.55, 685, "2011-2025"],
+    ["La Libertad", "Huanchaco-Pinillos (aeropuerto)", "845010", -8.081, -79.109, 32, "2011-2025"],
+    ["Lambayeque", "Ciclayo (Chiclayo) (aeropuerto)", "844520", -6.787, -79.828, 30, "2011-2025"],
+    ["Lima", "Lima-Chavez (aeropuerto)", "846280", -12.022, -77.114, 34, "2011-2025"],
+    ["Lima", "Linatakbc", "846310", -11.9, -76.967, 640, "TMYx"],
+    ["Loreto", "Iquitos-Secada (aeropuerto)", "843770", -3.785, -73.309, 93, "2011-2025"],
+    ["Loreto", "Yuirmaguas-Rengifo (Yurimaguas) (aeropuerto)", "844250", -5.894, -76.118, 179, "2011-2025"],
+    ["Madre de Dios", "Puerto Maldonado-Aldamiz (aeropuerto)", "846580", -12.614, -69.229, 201, "2011-2025"],
+    ["Moquegua", "Ilo (aeropuerto)", "847730", -17.695, -71.344, 22, "2011-2025"],
+    ["Piura", "Piura-Iberico (aeropuerto)", "844010", -5.206, -80.616, 35, "2011-2025"],
+    ["Piura", "Talara-Montes (aeropuerto)", "843900", -4.577, -81.254, 86, "2011-2025"],
+    ["Puno", "Juliaca-Manco (aeropuerto)", "847350", -15.467, -70.158, 3826, "2011-2025"],
+    ["San Martín", "Juanjui (aeropuerto)", "844740", -7.169, -76.729, 350, "2011-2025"],
+    ["San Martín", "Moyobamba", "844350", -6.033, -76.967, 833, "TMYx"],
+    ["San Martín", "Rioja-Vela (aeropuerto)", "844400", -6.068, -77.16, 825, "2011-2025"],
+    ["San Martín", "Tarapoto-Paredes (aeropuerto)", "844550", -6.509, -76.373, 274, "2011-2025"],
+    ["Tacna", "Tacna-Ciriani (aeropuerto)", "847820", -18.053, -70.276, 469, "2011-2025"],
+    ["Tumbes", "Tumbes-Canga (aeropuerto)", "843700", -3.553, -80.381, 35, "2011-2025"],
+    ["Ucayali", "Atalaya (aeropuerto)", "845930", -10.729, -73.767, 229, "2011-2025"],
+    ["Ucayali", "Pucallpa-Rengifo (aeropuerto)", "845150", -8.378, -74.574, 156, "2011-2025"],
+    ["Áncash", "Cimbote-Morales (aeropuerto)", "845310", -9.15, -78.524, 21, "2011-2025"],
+    ["Áncash", "Huaraz-Graziani (aeropuerto)", "845420", -9.347, -77.598, 2750, "2011-2025"]
+  ];
+
+  const stnSel=$('stn-sel');
+  (function(){
+    const grupos={};
+    ESTACIONES.forEach((e,i)=>{(grupos[e[0]]=grupos[e[0]]||[]).push([e,i]);});
+    Object.keys(grupos).sort((a,b)=>a.localeCompare(b,'es')).forEach(d=>{
+      const og=document.createElement('optgroup');og.label=d;
+      grupos[d].forEach(([e,i])=>{const o=document.createElement('option');o.value=i;o.textContent=e[1]+' · '+e[5]+' m';og.appendChild(o);});
+      stnSel.appendChild(og);
+    });
+    $('stn-n').textContent=ESTACIONES.length;
+  })();
+  stnSel.onchange=()=>{
+    if(stnSel.value==='') return;
+    const e=ESTACIONES[+stnSel.value];
+    setLoc(e[3],e[4],e[1].replace(/ \(aeropuerto\)$/,''));
+    $('zone-hint').textContent='Estación '+e[1]+', departamento de '+e[0]+' · código '+e[2]+' · altitud '+e[5]+' m · coordenadas del encabezado del archivo climático (Climate.OneBuilding, período '+e[6]+').';
+  };
+
+  function setLoc(lat,lon,name){
+    stt.lat=lat;stt.lon=lon;stt.locName=name+', Perú';
+    $('lat').value=lat;$('lon').value=lon;
+    $('lat-out').textContent=lat.toFixed(2);$('lon-out').textContent=lon.toFixed(2);
+    $('loc-val').textContent=stt.locName;
+    if(presetZones[name]) $('zone-hint').textContent=presetZones[name];
+    if(presetZones[name]) stnSel.value='';
+    document.querySelectorAll('.presets button').forEach(b=>{
+      b.classList.toggle('active', b.dataset.name===name);
+    });
+    refresh();
+  }
+
+  $('lat').oninput=e=>{stt.lat=+e.target.value;$('lat-out').textContent=stt.lat.toFixed(2);
+    stt.locName=stt.lat.toFixed(2)+', '+stt.lon.toFixed(2);
+    $('loc-val').textContent=stt.locName;
+    document.querySelectorAll('.presets button').forEach(b=>b.classList.remove('active'));
+    refresh();};
+  $('lon').oninput=e=>{stt.lon=+e.target.value;$('lon-out').textContent=stt.lon.toFixed(2);
+    stt.locName=stt.lat.toFixed(2)+', '+stt.lon.toFixed(2);
+    $('loc-val').textContent=stt.locName;
+    document.querySelectorAll('.presets button').forEach(b=>b.classList.remove('active'));
+    refresh();};
+  document.querySelectorAll('.presets button').forEach(b=>
+    b.onclick=()=>setLoc(+b.dataset.lat,+b.dataset.lon,b.dataset.name));
+
+  const sName={172:'Solsticio jun',266:'Equinoccio',355:'Solsticio dic'};
+  document.querySelectorAll('#season-seg button').forEach(b=>b.onclick=()=>{
+    document.querySelectorAll('#season-seg button').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');stt.doy=+b.dataset.doy;$('date-val').textContent=sName[stt.doy];$('season-label').textContent=b.textContent;refresh();
+  });
+  $('hour').oninput=e=>{stt.hour=+e.target.value;const h=Math.floor(stt.hour),m=Math.round((stt.hour-h)*60);$('hour-out').textContent=h+':'+String(m).padStart(2,'0');refresh();};
+  $('orient').oninput=e=>{stt.orient=+e.target.value;const d=['Norte','Noreste','Este','Sureste','Sur','Suroeste','Oeste','Noroeste','Norte'];$('orient-val').textContent=d[Math.round(stt.orient/45)];refresh();};
+  $('vw').oninput=e=>{stt.vw=+e.target.value;$('vw-out').textContent=stt.vw.toFixed(1)+' m';rebuildGeom();};
+  $('vh').oninput=e=>{stt.vh=+e.target.value;$('vh-out').textContent=stt.vh.toFixed(1)+' m';rebuildGeom();};
+  $('alero').onchange=e=>{stt.alero=e.target.checked;$('alero-len').disabled=!e.target.checked;refresh();};
+  $('alero-len').oninput=e=>{stt.aleroLen=+e.target.value;$('alero-d').textContent=stt.aleroLen.toFixed(1)+' m';refresh();};
+
+  $('lamasN').oninput=e=>{stt.lamasN=+e.target.value;$('lamasN-out').textContent=stt.lamasN;
+    $('lamasL').disabled=stt.lamasN===0;rebuildProtection();};
+  $('lamasL').oninput=e=>{stt.lamasLen=+e.target.value;$('lamasL-out').textContent=stt.lamasLen.toFixed(1)+' m';
+    rebuildProtection();};
+  $('parasolN').oninput=e=>{stt.parasolN=+e.target.value;$('parasolN-out').textContent=stt.parasolN;
+    $('parasolL').disabled=stt.parasolN===0;rebuildProtection();};
+  $('parasolL').oninput=e=>{stt.parasolLen=+e.target.value;$('parasolL-out').textContent=stt.parasolLen.toFixed(1)+' m';
+    rebuildProtection();};
+
+  document.querySelectorAll('#view-tabs button').forEach(b=>b.onclick=()=>{
+    document.querySelectorAll('#view-tabs button').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');stt.view=b.dataset.view;refresh();
+  });
+
+  const stratHints={
+    gain:'Ganancia: maximizar sol útil y área del vano. Sin protección salvo que el clima sea cálido.',
+    balance:'Equilibrio: conservar el sol del periodo frío y cortar el del periodo cálido, medido en horas de sol sobre la fachada. En E/O la protección fija corta ambos periodos; el resultado lo avisa.',
+    reduce:'Reducir excesos: priorizar sombra en el periodo cálido y cerrar el vano. Apropiado para climas calurosos (Iquitos, Piura). Con EPW cargado, los periodos usan la temperatura real.'
+  };
+  document.querySelectorAll('#strat-seg button').forEach(b=>b.onclick=()=>{
+    document.querySelectorAll('#strat-seg button').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');stt.strat=b.dataset.strat;$('strat-hint').textContent=stratHints[stt.strat];
+  });
+
+  $('epw-btn').onclick=()=>$('epw-file').click();
+  $('epw-file').onchange=e=>{
+    const f=e.target.files[0];if(!f)return;
+    const rd=new FileReader();
+    rd.onload=()=>{
+      const parsed=parseEPW(rd.result);
+      if(parsed){
+        epw=parsed;
+        $('epw-name').textContent=f.name;
+        $('epw-val').textContent=`EPW (${parsed.ghi.length} h)`;
+        $('epw-badge').textContent='EPW: '+f.name.slice(0,18);
+        $('epw-badge').classList.add('active');
+        toast(`EPW cargado: ${parsed.ghi.length} horas de radiación real`);
+        refresh();
+      } else {
+        $('epw-name').textContent='Archivo no válido';
+        toast('Archivo EPW no válido');
+      }
+    };
+    rd.readAsText(f);
+  };
+
+  $('optimize-btn').onclick=()=>{
+    const btn=$('optimize-btn');btn.disabled=true;btn.textContent='Optimizando…';
+    setTimeout(()=>{
+      const best=optimize(stt.strat);
+      // sync UI
+      $('vw').value=stt.vw;$('vw-out').textContent=stt.vw.toFixed(1)+' m';
+      $('vh').value=stt.vh;$('vh-out').textContent=stt.vh.toFixed(1)+' m';
+      $('alero').checked=stt.alero;$('alero-len').disabled=!stt.alero;
+      $('alero-len').value=stt.aleroLen;$('alero-d').textContent=stt.aleroLen.toFixed(1)+' m';
+      $('lamasN').value=stt.lamasN;$('lamasN-out').textContent=stt.lamasN;
+      $('lamasL').value=stt.lamasLen;$('lamasL-out').textContent=stt.lamasLen.toFixed(1)+' m';
+      $('lamasL').disabled=stt.lamasN===0;
+      $('parasolN').value=stt.parasolN;$('parasolN-out').textContent=stt.parasolN;
+      $('parasolL').value=stt.parasolLen;$('parasolL-out').textContent=stt.parasolLen.toFixed(1)+' m';
+      $('parasolL').disabled=stt.parasolN===0;
+      rebuildGeom();
+      btn.disabled=false;btn.textContent='⚙ Optimizar vano según estrategia';
+      const stratName={gain:'ganancia',balance:'equilibrio',reduce:'reducción de excesos'}[stt.strat];
+      let protStr='sin protección';
+      const parts=[];
+      if(stt.alero) parts.push(`alero ${stt.aleroLen.toFixed(1)} m`);
+      if(stt.lamasN>0) parts.push(`${stt.lamasN} lamas × ${stt.lamasLen.toFixed(1)} m`);
+      if(stt.parasolN>0) parts.push(`${stt.parasolN} parasoles × ${stt.parasolLen.toFixed(1)} m`);
+      if(parts.length) protStr=parts.join(' + ');
+      $('reco-text').textContent=
+        `Vano óptimo para ${stt.locName}, fachada ${$('orient-val').textContent}, estrategia "${stratName}": `
+        +`${stt.vw.toFixed(1)}×${stt.vh.toFixed(1)} m, ${parts.length?'con '+protStr:protStr}. `
+        +`Anual: ${best.sunW} h de sol en periodo frío · ${best.sunS} h en periodo cálido · ${best.shade} h cortadas. `
+        +(best.hotTot>0?`Corta ${Math.round(best.hotCut*100)} % del sol del periodo cálido`:'No hay periodo cálido con sol sobre esta fachada')
+        +(best.coldTot>0?` y conserva ${Math.round(best.coldKeep*100)} % del sol del periodo frío. `:'; esta fachada no recibe sol en el periodo frío. ')
+        +(best.fuente==='EPW'?'Periodos definidos con la temperatura del archivo climático.':'Periodos por calendario (carga un EPW para definirlos con temperatura real).')
+        +((stt.strat!=='gain' && !parts.length && best.hotTot>best.coldTot*1.3)?' Aviso: en esta fachada una protección fija corta sol de ambos periodos por igual; considera reducir el vano o usar protección móvil.':'')
+        +` Puntaje: ${best.score}.`;
+    },50);
+  };
+
+  $('export-obj').onclick=exportOBJ;
+  $('export-json').onclick=exportJSON;
+
+  // ---------- Orbit ----------
+  let drag=false,px=0,py=0,theta=Math.atan2(11,9),phi=0.62,r=Math.hypot(9,7,11);
+  function updateCam(){cam.position.x=r*Math.cos(phi)*Math.sin(theta);cam.position.y=r*Math.sin(phi);cam.position.z=r*Math.cos(phi)*Math.cos(theta);cam.lookAt(0,1.4,0);}
+  renderer.domElement.addEventListener('pointerdown',e=>{drag=true;px=e.clientX;py=e.clientY;});
+  window.addEventListener('pointerup',()=>drag=false);
+  window.addEventListener('pointermove',e=>{if(!drag)return;theta-=(e.clientX-px)*0.008;phi+=(e.clientY-py)*0.006;phi=Math.max(0.12,Math.min(1.45,phi));px=e.clientX;py=e.clientY;updateCam();});
+  renderer.domElement.addEventListener('wheel',e=>{e.preventDefault();r=Math.max(7,Math.min(28,r+e.deltaY*0.01));updateCam();},{passive:false});
+  function onResize(){W=wrap.clientWidth;H=wrap.clientHeight;cam.aspect=W/H;cam.updateProjectionMatrix();renderer.setSize(W,H);}
+  window.addEventListener('resize',onResize);
+
+  buildRoom();
+  function animate(){requestAnimationFrame(animate);renderer.render(scene,cam);}
+  $('date-val').textContent='Solsticio jun';
+  document.querySelector('.presets button[data-name="Lima"]').classList.add('active');
+  updateCam();refresh();animate();
+})();
+</script>
+</body>
+</html>

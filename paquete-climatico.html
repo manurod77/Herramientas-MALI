@@ -1,0 +1,773 @@
+<title>Paquete climático EPW</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Concepto: una hoja de trabajo técnica. Un solo carril de lectura: pasos, archivo, resultado en texto plano para copiar. */
+:root {
+  --bg: #f4f7f7;
+  --surface: #ffffff;
+  --fg: #14222b;
+  --mute: #4a5d68;
+  --line: #d3dde0;
+  --accent: #2a747a;
+  --accent-ink: #ffffff;
+  --accent-2: #b4621f;
+  --soft: #e6f0f0;
+  --warn-bg: #fbf0e8;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-data: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1b22;
+    --surface: #14262f;
+    --fg: #e5edef;
+    --mute: #9db2ba;
+    --line: #2a4450;
+    --accent: #5db4ba;
+    --accent-ink: #0e1b22;
+    --accent-2: #e8935a;
+    --soft: #17323c;
+    --warn-bg: #2b2018;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1b22;
+  --surface: #14262f;
+  --fg: #e5edef;
+  --mute: #9db2ba;
+  --line: #2a4450;
+  --accent: #5db4ba;
+  --accent-ink: #0e1b22;
+  --accent-2: #e8935a;
+  --soft: #17323c;
+  --warn-bg: #2b2018;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font: 400 15px/1.55 var(--font-body);
+  padding-block: 28px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+main { max-width: 880px; margin: 0 auto; display: flex; flex-direction: column; gap: 22px; }
+.kicker { font: 500 11px/1 var(--font-body); letter-spacing: .14em; text-transform: uppercase; color: var(--accent); margin: 0 0 10px; }
+h1 { font: 600 clamp(26px, 5vw, 36px)/1.12 var(--font-body); margin: 0 0 10px; text-wrap: balance; letter-spacing: -0.01em; }
+.lead { margin: 0; color: var(--mute); max-width: 62ch; }
+h2 { font: 600 13px/1.2 var(--font-body); letter-spacing: .1em; text-transform: uppercase; color: var(--mute); margin: 0 0 10px; }
+.steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; counter-reset: s; }
+.steps li { counter-increment: s; border-top: 2px solid var(--line); padding-top: 10px; color: var(--mute); font-size: 14px; }
+.steps li::before { content: counter(s); display: block; font: 500 12px/1 var(--font-data); color: var(--accent-2); margin-bottom: 6px; }
+.steps b { color: var(--fg); font-weight: 600; }
+.drop {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; text-align: center;
+  border: 1.5px dashed var(--accent); border-radius: 6px; background: var(--surface);
+  padding: 28px 16px; cursor: pointer; transition: background .15s;
+}
+.drop:hover, .drop.over, .drop:focus-within { background: var(--soft); }
+.drop strong { font-weight: 600; }
+.drop span { color: var(--mute); font-size: 13px; }
+.drop input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.opt { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; }
+.opt p { margin: 0 0 10px; color: var(--mute); font-size: 13.5px; }
+.fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+label { display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; color: var(--mute); }
+input[type=number] {
+  font: 400 14px var(--font-data); color: var(--fg); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 4px; padding: 7px 9px; min-width: 0; width: 100%;
+}
+input[type=number]:focus-visible, button:focus-visible, .drop:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.filebtn { position: relative; display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--accent); color: var(--accent); border-radius: 4px; padding: 8px 14px; font: 500 14px var(--font-body); cursor: pointer; margin-bottom: 12px; }
+.filebtn:hover, .filebtn:focus-within { background: var(--soft); }
+.filebtn input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.hint { font-size: 13px; color: var(--mute); margin: 8px 0 0; min-height: 1.2em; }
+input[type=text] { font: 400 14px var(--font-data); color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 7px 9px; min-width: 0; width: 100%; }
+input[type=text]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.stack { display: flex; flex-direction: column; gap: 12px; }
+#status { font-size: 14px; }
+#status.err { color: var(--accent-2); }
+.result { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+.bar .meta { flex: 1 1 220px; min-width: 0; font: 400 12.5px var(--font-data); color: var(--mute); }
+button {
+  font: 500 14px var(--font-body); border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink);
+  border-radius: 4px; padding: 8px 16px; cursor: pointer;
+}
+button.ghost { background: transparent; color: var(--accent); }
+button:hover { filter: brightness(1.08); }
+textarea {
+  display: block; width: 100%; height: 360px; resize: vertical; border: 0; background: var(--surface); color: var(--fg);
+  font: 400 12px/1.5 var(--font-data); padding: 14px; white-space: pre; overflow: auto; tab-size: 2;
+}
+textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.note { background: var(--warn-bg); border-left: 3px solid var(--accent-2); border-radius: 4px; padding: 12px 14px; font-size: 14px; }
+.note b { font-weight: 600; }
+footer { color: var(--mute); font-size: 13px; }
+@media (max-width: 620px) {
+  .steps, .fields { grid-template-columns: 1fr; }
+  textarea { height: 300px; }
+}
+@media (prefers-reduced-motion: reduce) { .drop { transition: none; } }
+</style>
+
+<main>
+  <header>
+    <p class="kicker">Módulo 3 · Sesión 04</p>
+    <h1>Paquete climático EPW</h1>
+    <p class="lead">Convierte el archivo climático de tu estación, de unos 1,6 MB, en un resumen de texto con todo lo que piden el análisis climático, la lectura de Givoni, Olgyay y Mahoney, y la elección de estrategias. Lo pegas en el chat de la IA en lugar del archivo. Todo se calcula en tu navegador: el archivo no se sube a ningún servidor.</p>
+  </header>
+
+  <section aria-label="Pasos">
+    <ol class="steps">
+      <li><b>Carga tu archivo.</b> El .epw o el .zip tal como lo descargaste de Climate.OneBuilding.</li>
+      <li><b>Copia el paquete.</b> Aparece abajo, listo para pegar.</li>
+      <li><b>Pégalo en el chat</b> junto con el GeoJSON de tu terreno. No adjuntes el .epw.</li>
+    </ol>
+  </section>
+
+  <section aria-label="Archivo">
+    <label class="drop" id="drop" for="file">
+      <strong>Arrastra aquí tu archivo .epw o .zip</strong>
+      <span>o haz clic para elegirlo</span>
+      <input type="file" id="file" accept=".epw,.zip">
+    </label>
+  </section>
+
+  <section class="opt" aria-label="Datos del terreno, opcionales">
+    <h2>Tu terreno (opcional)</h2>
+    <p>Carga el GeoJSON de tu terreno y la página calcula el centroide y toma la cota si el archivo la declara. Con eso el paquete incluye la distancia a la estación, la comparación de altitudes y la geometría solar de tu terreno, calculadas aquí y no por la IA. También puedes escribir los valores a mano.</p>
+    <label class="filebtn" for="geo">Cargar GeoJSON del terreno
+      <input type="file" id="geo" accept=".geojson,.json,application/geo+json,application/json"></label>
+    <div class="fields">
+      <label for="slat">Latitud del terreno
+        <input type="number" id="slat" step="any" placeholder="-7.1650" inputmode="decimal"></label>
+      <label for="slon">Longitud del terreno
+        <input type="number" id="slon" step="any" placeholder="-78.4700" inputmode="decimal"></label>
+      <label for="selev">Cota del terreno (m s. n. m.)
+        <input type="number" id="selev" step="any" placeholder="2670" inputmode="decimal"></label>
+    </div>
+    <p class="hint" id="geoinfo" role="status" aria-live="polite"></p>
+  </section>
+
+  <section class="opt" aria-label="Lluvia mensual, opcional">
+    <h2>Lluvia mensual (opcional)</h2>
+    <p>El archivo EPW no es una fuente confiable de lluvia. Al cargar el GeoJSON, la página consulta sola la lluvia mensual de NASA POWER para el centroide de tu terreno; es un dato de modelo, referencial. Si tienes cifras de SENAMHI, puedes reemplazarlas escribiendo los 12 valores. Mahoney las necesita para el indicador de protección contra la lluvia.</p>
+    <button type="button" class="filebtn" id="getrain">Obtener lluvia automática (NASA POWER)</button>
+    <div class="stack">
+      <label for="rain">Lluvia total de cada mes, en mm (12 valores, de enero a diciembre)
+        <input type="text" id="rain" placeholder="Ej.: 90 110 135 120 60 25 10 15 40 80 90 100" autocomplete="off"></label>
+      <label for="rainsrc">Fuente y período de esas cifras
+        <input type="text" id="rainsrc" placeholder="Ej.: SENAMHI, estación Augusto Weberbauer, 1991-2020" autocomplete="off"></label>
+    </div>
+    <p class="hint" id="raininfo" role="status" aria-live="polite"></p>
+  </section>
+
+  <p id="status" role="status" aria-live="polite"></p>
+
+  <section class="result" id="result" hidden aria-label="Paquete climático">
+    <div class="bar">
+      <div class="meta" id="meta"></div>
+      <button type="button" id="copy">Copiar paquete</button>
+      <button type="button" class="ghost" id="dl">Descargar .md</button>
+    </div>
+    <textarea id="out" readonly spellcheck="false" aria-label="Texto del paquete climático"></textarea>
+  </section>
+
+  <div class="note" id="scope">
+    <b>Alcance.</b> El paquete resume los datos de una estación cercana, no mediciones de tu terreno. Un análisis de campo con instrumentos prevalece. La lluvia no se calcula: el archivo EPW no es una fuente confiable de precipitación. Ingrésala desde SENAMHI o NASA POWER; sin ella queda SIN VERIFICAR. Los indicadores H1 a A3 de Mahoney tampoco se calculan: el paquete trae los grupos de humedad y el estrés térmico con que se arman. Los umbrales de la sección «Lectura por estrategia» son supuestos declarados y se pueden ajustar.
+  </div>
+
+  <footer>Los valores salen de las 8 760 filas del archivo, por lo que cada cifra se puede marcar VERIFICADO.</footer>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+(function () {
+  var MES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  var SECT = ['N','NE','E','SE','S','SO','O','NO'];
+  var $ = function (id) { return document.getElementById(id); };
+  var raw = null;      // { text, name }
+  var lastText = '';
+  var lastName = '';
+
+  function decode(buf) {
+    try { return new TextDecoder('utf-8', { fatal: true }).decode(buf); }
+    catch (e) { return new TextDecoder('latin1').decode(buf); }
+  }
+
+  function acc() { return { s: 0, n: 0, mn: Infinity, mx: -Infinity }; }
+  function add(a, v) { a.s += v; a.n++; if (v < a.mn) a.mn = v; if (v > a.mx) a.mx = v; }
+  function mean(a) { return a.n ? a.s / a.n : NaN; }
+  function f(x, d) { return isFinite(x) ? x.toFixed(d) : 's/d'; }
+  function pad(s, n) { s = String(s); while (s.length < n) s += ' '; return s; }
+  function padL(s, n) { s = String(s); while (s.length < n) s = ' ' + s; return s; }
+
+  function haversine(lat1, lon1, lat2, lon2) {
+    var R = 6371.0088, rad = Math.PI / 180;
+    var dLat = (lat2 - lat1) * rad, dLon = (lon2 - lon1) * rad;
+    var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    return 2 * R * Math.asin(Math.sqrt(a));
+  }
+
+  // ---------- Psicrometría ----------
+  function pws(T) { return 610.94 * Math.exp(17.625 * T / (T + 243.04)); }           // Pa, Magnus (Alduchov y Eskridge)
+  function wRatio(T, RH, P) { var pw = pws(T) * RH / 100; return 0.62198 * pw / (P - pw) * 1000; } // g/kg
+  function twb(T, RH, P) {                                                           // °C, bisección sobre el balance de entalpía
+    var W = wRatio(T, RH, P) / 1000, lo = -30, hi = T, i, mid, ws, wc;
+    for (i = 0; i < 40; i++) {
+      mid = (lo + hi) / 2; ws = 0.62198 * pws(mid) / (P - pws(mid));
+      wc = ((2501 - 2.326 * mid) * ws - 1.006 * (T - mid)) / (2501 + 1.86 * T - 4.186 * mid);
+      if (wc > W) hi = mid; else lo = mid;
+    }
+    return (lo + hi) / 2;
+  }
+
+  // ---------- Geometría solar ----------
+  var CUM = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
+  function decl(n) {                                                                  // Spencer, rad
+    var B = 2 * Math.PI * (n - 1) / 365;
+    return 0.006918 - 0.399912 * Math.cos(B) + 0.070257 * Math.sin(B) - 0.006758 * Math.cos(2 * B) +
+           0.000907 * Math.sin(2 * B) - 0.002697 * Math.cos(3 * B) + 0.00148 * Math.sin(3 * B);
+  }
+  function eot(n) {                                                                   // minutos
+    var B = 2 * Math.PI * (n - 1) / 365;
+    return 229.18 * (0.000075 + 0.001868 * Math.cos(B) - 0.032077 * Math.sin(B) - 0.014615 * Math.cos(2 * B) - 0.04089 * Math.sin(2 * B));
+  }
+
+  // ---------- Mahoney: límites de confort (día y noche) por grupo de humedad y temperatura media anual ----------
+  // [día mín, día máx, noche mín, noche máx]. Columnas: TMA > 20, 15 a 20, < 15.
+  var MAH = [
+    [[26, 34, 17, 25], [23, 32, 14, 23], [21, 30, 12, 21]],
+    [[25, 31, 17, 24], [22, 30, 14, 22], [20, 27, 12, 20]],
+    [[23, 29, 17, 23], [21, 28, 14, 21], [19, 26, 12, 19]],
+    [[22, 27, 17, 21], [20, 25, 14, 20], [18, 24, 12, 18]]
+  ];
+
+  function analyze(text, name, site, rain) {
+    var lines = text.split(/\r?\n/);
+    var head = {}, i, k, h;
+    for (i = 0; i < 8; i++) { var l = lines[i] || ''; head[l.split(',')[0]] = l; }
+    if (!head['LOCATION']) throw new Error('No encuentro la línea LOCATION. ¿Es un archivo .epw?');
+    var loc = head['LOCATION'].split(',');
+    var st = { name: loc[1], region: loc[2], country: loc[3], wmo: loc[5], lat: parseFloat(loc[6]), lon: parseFloat(loc[7]), tz: loc[8], elev: parseFloat(loc[9]) };
+    var com = (head['COMMENTS 1'] || '').replace(/^COMMENTS 1,/, '').replace(/^"|"$/g, '');
+
+    // ---- Lectura de filas ----
+    var R = [], bad = { T: 0, RH: 0, P: 0, R: 0, W: 0, C: 0 };
+    for (var li = 8; li < lines.length; li++) {
+      var line = lines[li];
+      if (!line || line.length < 20) continue;
+      var c = line.split(',');
+      if (c.length < 22) continue;
+      var mo = parseInt(c[1], 10) - 1, hr = parseInt(c[3], 10) - 1;
+      if (!(mo >= 0 && mo < 12) || !(hr >= 0 && hr < 24)) continue;
+      var T = parseFloat(c[6]), RH = parseFloat(c[8]), P = parseFloat(c[9]);
+      var G = parseFloat(c[13]), DN = parseFloat(c[14]), DF = parseFloat(c[15]);
+      var WD = parseFloat(c[20]), WS = parseFloat(c[21]), CC = parseFloat(c[22]);
+      var r = { mo: mo, dy: parseInt(c[2], 10), hr: hr, T: T < 99 ? T : NaN, RH: RH < 999 ? RH : NaN, P: P < 999999 ? P : NaN,
+                G: NaN, DN: NaN, DF: NaN, WD: WD < 999 ? WD : NaN, WS: WS < 999 ? WS : NaN, CC: CC < 99 ? CC : NaN };
+      if (G < 9999 && DN < 9999 && DF < 9999) { r.G = G; r.DN = DN; r.DF = DF; }
+      if (isNaN(r.T)) bad.T++; if (isNaN(r.RH)) bad.RH++; if (isNaN(r.P)) bad.P++;
+      if (isNaN(r.G)) bad.R++; if (isNaN(r.WS) || isNaN(r.WD)) bad.W++; if (isNaN(r.CC)) bad.C++;
+      R.push(r);
+    }
+    var rows = R.length;
+    if (rows < 8000) throw new Error('El archivo tiene ' + rows + ' filas de datos y se esperan 8 760. ¿Está completo?');
+
+    // ---- Presión de referencia ----
+    var pAcc = acc(); R.forEach(function (r) { if (!isNaN(r.P)) add(pAcc, r.P); });
+    var Pm = mean(pAcc);
+
+    // ---- Estadísticas mensuales ----
+    var M = [], ht = [], wd = [];
+    for (k = 0; k < 12; k++) {
+      M.push({ T: acc(), RH: acc(), WS: acc(), CC: acc(), W: acc(), tmax: acc(), tmin: acc(), hmax: acc(), hmin: acc(), twbMax: acc(), days: 0, g: 0, dn: 0, df: 0 });
+      var row = []; for (h = 0; h < 24; h++) row.push(acc()); ht.push(row);
+      var w = []; for (h = 0; h < 8; h++) w.push(0); wd.push(w);
+    }
+    var all = { T: acc(), RH: acc(), WS: acc(), CC: acc(), g: 0, dn: 0, df: 0 };
+    var wdirN = [0, 0, 0, 0, 0, 0, 0, 0], wdirS = [0, 0, 0, 0, 0, 0, 0, 0], windValid = 0, calm = 0, sunHours = 0;
+    var tmin = Infinity, tmax = -Infinity, wmax = 0;
+    var daily = {};
+    R.forEach(function (r) {
+      var m = M[r.mo];
+      var d = daily[r.mo * 100 + r.dy];
+      if (!d) d = daily[r.mo * 100 + r.dy] = { mo: r.mo, tmax: -Infinity, tmin: Infinity, hmax: -Infinity, hmin: Infinity, twb: NaN };
+      var P = isNaN(r.P) ? Pm : r.P;
+      if (!isNaN(r.T)) {
+        add(m.T, r.T); add(all.T, r.T); add(ht[r.mo][r.hr], r.T);
+        if (r.T < tmin) tmin = r.T; if (r.T > tmax) tmax = r.T;
+        if (r.T > d.tmax) { d.tmax = r.T; d.twb = isNaN(r.RH) ? NaN : twb(r.T, r.RH, P); }
+        if (r.T < d.tmin) d.tmin = r.T;
+      }
+      if (!isNaN(r.RH)) {
+        add(m.RH, r.RH); add(all.RH, r.RH);
+        if (r.RH > d.hmax) d.hmax = r.RH; if (r.RH < d.hmin) d.hmin = r.RH;
+      }
+      if (!isNaN(r.T) && !isNaN(r.RH)) { r.W = wRatio(r.T, r.RH, P); add(m.W, r.W); if (r.W > wmax) wmax = r.W; }
+      if (!isNaN(r.G)) {
+        m.g += r.G; m.dn += r.DN; m.df += r.DF; all.g += r.G; all.dn += r.DN; all.df += r.DF;
+        if (r.G > 0) sunHours++;
+      }
+      if (!isNaN(r.WS) && !isNaN(r.WD)) {
+        add(m.WS, r.WS); add(all.WS, r.WS);
+        if (r.WS === 0) calm++;
+        else { var sec = Math.floor(((r.WD % 360) + 22.5) / 45) % 8; wd[r.mo][sec]++; wdirN[sec]++; wdirS[sec] += r.WS; windValid++; }
+      }
+      if (!isNaN(r.CC)) { add(m.CC, r.CC); add(all.CC, r.CC); }
+    });
+    Object.keys(daily).forEach(function (key) {
+      var d = daily[key], m = M[d.mo];
+      m.days++;
+      if (isFinite(d.tmax)) { add(m.tmax, d.tmax); add(m.tmin, d.tmin); }
+      if (isFinite(d.hmax)) { add(m.hmax, d.hmax); add(m.hmin, d.hmin); }
+      if (!isNaN(d.twb)) add(m.twbMax, d.twb);
+    });
+
+    var out = [];
+    var P1 = function (s) { out.push(s); };
+    P1('PAQUETE CLIMÁTICO · calculado en el navegador a partir de las ' + rows + ' filas del archivo EPW (sin IA). Estado de las cifras: VERIFICADO, salvo donde se indique otra cosa.');
+    P1('Instrucción para la IA: este texto reemplaza al archivo .epw. Usa solo estas cifras; lo que no esté aquí, márcalo SIN VERIFICAR. Los criterios y umbrales declarados en cada sección son los que se usaron: no los cambies sin avisar.');
+    P1('');
+    P1('ESTACIÓN');
+    P1('Archivo: ' + name);
+    P1('Nombre: ' + st.name + ' · código WMO ' + st.wmo + ' · ' + st.country + (st.region && st.region !== st.country ? ' · ' + st.region : ''));
+    P1('Coordenadas: latitud ' + f(st.lat, 4) + ', longitud ' + f(st.lon, 4) + ' · altitud ' + f(st.elev, 1) + ' m · huso horario UTC' + (parseFloat(st.tz) >= 0 ? '+' : '') + st.tz);
+    P1('Fuente y período: ' + com);
+    P1('Tipo de dato: año meteorológico típico armado con varios años de registro, no el registro de un año real.');
+
+    var hasSite = site && isFinite(site.lat) && isFinite(site.lon);
+    P1('');
+    P1('DISTANCIA ESTACIÓN–TERRENO');
+    if (hasSite) {
+      var dist = haversine(st.lat, st.lon, site.lat, site.lon);
+      var crit = dist < 25 ? 'aceptable (criterio: menos de 25 km)' : dist <= 100 ? 'antecedente territorial (criterio: entre 25 y 100 km)' : 'fuera de los criterios de la ficha (más de 100 km)';
+      P1('Terreno: latitud ' + f(site.lat, 5) + ', longitud ' + f(site.lon, 5));
+      P1('Distancia en línea recta: ' + f(dist, 2) + ' km → ' + crit);
+      if (isFinite(site.elev)) {
+        var dz = site.elev - st.elev;
+        P1('Cota del terreno: ' + f(site.elev, 1) + ' m · diferencia con la estación: ' + (dz >= 0 ? '+' : '') + f(dz, 1) + ' m' + (Math.abs(dz) > 200 ? ' → supera 200 m: las temperaturas pierden validez directa' : ' → no supera 200 m'));
+      } else P1('Cota del terreno: no ingresada → diferencia de altitud SIN VERIFICAR');
+    } else P1('No calculada (sin coordenadas del terreno). La IA la calcula con el centroide del GeoJSON.');
+
+    P1('');
+    P1('RESUMEN ANUAL');
+    P1('Temperatura de bulbo seco (°C): media ' + f(mean(all.T), 1) + ' · mínima ' + f(tmin, 1) + ' · máxima ' + f(tmax, 1));
+    P1('Humedad relativa (%): media ' + f(mean(all.RH), 1) + ' · mínima ' + f(all.RH.mn, 0) + ' · máxima ' + f(all.RH.mx, 0));
+    P1('Radiación (kWh/m²·año): global horizontal ' + f(all.g / 1000, 0) + ' · directa normal ' + f(all.dn / 1000, 0) + ' · difusa horizontal ' + f(all.df / 1000, 0));
+    P1('Viento (m/s): media ' + f(mean(all.WS), 1) + ' · máxima ' + f(all.WS.mx, 1) + ' · calma (0 m/s) en el ' + f(100 * calm / (windValid + calm), 1) + ' % de las horas');
+    P1('Presión atmosférica (hPa): media ' + f(Pm / 100, 1) + ' (es la que se usó para la humedad absoluta y el bulbo húmedo; úsala en el diagrama psicrométrico)');
+    P1('Nubosidad total (0 = despejado, 10 = cubierto): media ' + f(mean(all.CC), 1));
+    P1('Horas del año con radiación global mayor que 0: ' + sunHours);
+
+    // ---- Tabla mensual ----
+    P1('');
+    P1('TABLA MENSUAL (radiación en kWh/m²·día; Tmáx y Tmín diarias = promedio de los máximos y mínimos de cada día; HRmáx y HRmín, igual para la humedad; W = humedad absoluta en g de agua por kg de aire seco; Tbh = temperatura de bulbo húmedo a la hora de la Tmáx diaria)');
+    var cols = ['Mes', 'T media', 'Tmáx diaria', 'Tmín diaria', 'Rango', 'Tmín abs', 'Tmáx abs', 'HR media', 'HRmáx', 'HRmín', 'W media', 'Tbh@Tmáx', 'Glob.', 'Dir.N', 'Difusa', 'Viento', 'Nubos.', 'Dir.dom'];
+    var w1 = [4, 7, 11, 11, 6, 8, 8, 8, 6, 6, 7, 8, 6, 6, 6, 6, 6, 7];
+    P1(cols.map(function (x, j) { return pad(x, w1[j]); }).join(' | '));
+    for (k = 0; k < 12; k++) {
+      var m = M[k], dd = m.days || 1, dom = 0;
+      for (h = 1; h < 8; h++) if (wd[k][h] > wd[k][dom]) dom = h;
+      var cells = [MES[k], f(mean(m.T), 1), f(mean(m.tmax), 1), f(mean(m.tmin), 1), f(mean(m.tmax) - mean(m.tmin), 1), f(m.T.mn, 1), f(m.T.mx, 1),
+        f(mean(m.RH), 0), f(mean(m.hmax), 0), f(mean(m.hmin), 0), f(mean(m.W), 1), f(mean(m.twbMax), 1),
+        f(m.g / 1000 / dd, 2), f(m.dn / 1000 / dd, 2), f(m.df / 1000 / dd, 2), f(mean(m.WS), 1), f(mean(m.CC), 1), SECT[dom]];
+      P1(cells.map(function (x, j) { return pad(x, w1[j]); }).join(' | '));
+    }
+
+    P1('');
+    P1('PERFIL HORARIO DE TEMPERATURA (°C, media por mes y hora; hora 1 = 00:00 a 01:00)');
+    var hh = pad('Mes', 4); for (h = 1; h <= 24; h++) hh += ' ' + padL(h, 4);
+    P1(hh);
+    for (k = 0; k < 12; k++) {
+      var rr = pad(MES[k], 4);
+      for (h = 0; h < 24; h++) rr += ' ' + padL(f(mean(ht[k][h]), 1), 4);
+      P1(rr);
+    }
+
+    P1('');
+    P1('VIENTO (dirección desde donde sopla; solo horas con viento mayor que 0)');
+    P1(pad('Sector', 7) + ' | ' + pad('% de horas', 10) + ' | Velocidad media (m/s)');
+    for (h = 0; h < 8; h++) P1(pad(SECT[h], 7) + ' | ' + pad(f(100 * wdirN[h] / windValid, 1), 10) + ' | ' + f(wdirN[h] ? wdirS[h] / wdirN[h] : NaN, 1));
+
+    // ---- Confort adaptativo ----
+    var cf = [], flagOut = false;
+    for (k = 0; k < 12; k++) {
+      var tm = mean(M[k].T), tc = 0.31 * tm + 17.8;
+      cf.push({ tm: tm, tc: tc, lo: tc - 3.5, hi: tc + 3.5, out: tm < 10 || tm > 33.5, dC: 0, dO: 0, dH: 0, nC: 0, nO: 0, nH: 0 });
+      if (cf[k].out) flagOut = true;
+    }
+    R.forEach(function (r) {
+      if (isNaN(r.T)) return;
+      var q = cf[r.mo], day = r.G > 0, cl = r.T < q.lo ? 'C' : r.T > q.hi ? 'H' : 'O';
+      q[(day ? 'd' : 'n') + cl]++;
+    });
+    P1('');
+    P1('CONFORT TÉRMICO (criterio declarado: modelo adaptativo de ASHRAE 55, aceptabilidad del 80 %: T de confort = 0.31 × T media mensual + 17.8 °C, con banda de ±3.5 °C; se aplica entre 10 y 33.5 °C de T media. Se usa la media mensual en lugar de la media móvil de los últimos días. Día = horas con radiación global mayor que 0. Frías = bajo la banda; cálidas = sobre la banda. Cifras en horas del mes)');
+    var c2 = ['Mes', 'T conf', 'Banda inf', 'Banda sup', 'Día frío', 'Día conf', 'Día cálido', 'Noche frío', 'Noche conf', 'Noche cálido', 'Rég.'];
+    var w2 = [4, 6, 9, 9, 8, 8, 10, 10, 10, 12, 8];
+    P1(c2.map(function (x, j) { return pad(x, w2[j]); }).join(' | '));
+    var tot = { dC: 0, dO: 0, dH: 0, nC: 0, nO: 0, nH: 0 };
+    for (k = 0; k < 12; k++) {
+      var q = cf[k], lab = (q.dC + q.nC) > (q.dH + q.nH) && (q.dC + q.nC) > (q.dO + q.nO) ? 'frío' : (q.dH + q.nH) > (q.dC + q.nC) && (q.dH + q.nH) > (q.dO + q.nO) ? 'cálido' : 'confort';
+      ['dC', 'dO', 'dH', 'nC', 'nO', 'nH'].forEach(function (z) { tot[z] += q[z]; });
+      P1([MES[k] + (q.out ? '*' : ''), f(q.tc, 1), f(q.lo, 1), f(q.hi, 1), q.dC, q.dO, q.dH, q.nC, q.nO, q.nH, lab].map(function (x, j) { return pad(x, w2[j]); }).join(' | '));
+    }
+    P1(['Año', '', '', '', tot.dC, tot.dO, tot.dH, tot.nC, tot.nO, tot.nH, ''].map(function (x, j) { return pad(x, w2[j]); }).join(' | '));
+    P1('Régimen = la categoría con más horas en el mes. Total de horas del año: ' + rows + (flagOut ? ' · * mes con T media fuera de 10 a 33.5 °C: el modelo no aplica' : ''));
+
+    // ---- Mahoney ----
+    var AMT = 0; for (k = 0; k < 12; k++) AMT += mean(M[k].T); AMT /= 12;
+    var cls = AMT > 20 ? 0 : AMT >= 15 ? 1 : 2;
+    var mm = []; for (k = 0; k < 12; k++) mm.push(mean(M[k].T));
+    var amr = Math.max.apply(null, mm) - Math.min.apply(null, mm);
+    P1('');
+    P1('MAHONEY · tablas 1 a 3 (grupo de humedad, límites de confort y estrés térmico)');
+    P1('Temperatura media anual (TMA): ' + f(AMT, 1) + ' °C → clase ' + ['mayor que 20', 'de 15 a 20', 'menor que 15'][cls] + ' · rango anual de las temperaturas medias mensuales: ' + f(amr, 1) + ' °C');
+    P1('Grupo de humedad (HR media mensual = promedio de HRmáx y HRmín): 1 = menor que 30 %; 2 = 30 a 50 %; 3 = más de 50 hasta 70 %; 4 = más de 70 %. Estrés día: C si la Tmáx diaria media queda bajo el límite inferior de día, H si supera el superior, O si está dentro. Estrés noche: igual, con la Tmín diaria media y los límites de noche.');
+    var c3 = ['Mes', 'Tmáx', 'Tmín', 'Rango', 'HR', 'Grupo', 'Límite día', 'Estrés día', 'Límite noche', 'Estrés noche'];
+    var w3 = [4, 5, 5, 6, 4, 5, 10, 10, 12, 12];
+    P1(c3.map(function (x, j) { return pad(x, w3[j]); }).join(' | '));
+    for (k = 0; k < 12; k++) {
+      var m = M[k], hrm = (mean(m.hmax) + mean(m.hmin)) / 2, g = hrm < 30 ? 1 : hrm <= 50 ? 2 : hrm <= 70 ? 3 : 4;
+      var L = MAH[g - 1][cls], tx = mean(m.tmax), tn = mean(m.tmin);
+      var sd = tx > L[1] ? 'H' : tx < L[0] ? 'C' : 'O', sn = tn > L[3] ? 'H' : tn < L[2] ? 'C' : 'O';
+      P1([MES[k], f(tx, 1), f(tn, 1), f(tx - tn, 1), f(hrm, 0), g, L[0] + ' a ' + L[1], sd, L[2] + ' a ' + L[3], sn].map(function (x, j) { return pad(x, w3[j]); }).join(' | '));
+    }
+    if (rain && rain.vals) {
+      var wet = [];
+      rain.vals.forEach(function (v, j) { if (v > 200) wet.push(MES[j]); });
+      P1('');
+      P1('LLUVIA MENSUAL (mm), no calculada del EPW. Fuente: ' + (rain.src || 'no indicada → estado SIN VERIFICAR'));
+      P1(pad('Mes', 4) + ' | ' + MES.map(function (x) { return padL(x, 5); }).join(' ') + ' | ' + padL('Año', 6));
+      P1(pad('mm', 4) + ' | ' + rain.vals.map(function (x) { return padL(f(x, 0), 5); }).join(' ') + ' | ' + padL(f(rain.total, 0), 6));
+      P1('Mahoney H3, protección contra la lluvia (lluvia mensual mayor que 200 mm): ' + (wet.length ? wet.length + ' meses (' + wet.join(', ') + ')' : 'ningún mes') + '. El umbral de 200 mm coincide en las dos fuentes que se revisaron.');
+      P1('Indicadores H1, H2, A1, A2 y A3: no se calculan en este paquete; se arman a partir de las columnas del estrés térmico y del rango Tmáx−Tmín.');
+    } else {
+      P1('Lluvia mensual (necesaria para el indicador H3): no ingresada → SIN VERIFICAR; obtener de SENAMHI o NASA POWER. Indicadores H1, H2, H3, A1, A2 y A3: no se calculan en este paquete; se arman a partir de las columnas de arriba y del rango Tmáx−Tmín.');
+    }
+
+    // ---- Psicrometría ----
+    P1('');
+    P1('PSICROMETRÍA (para el diagrama de Givoni; presión usada: ' + f(Pm / 100, 1) + ' hPa)');
+    P1('Horas del año por temperatura de bulbo seco (filas, °C) y humedad absoluta W (columnas, g/kg):');
+    var t0 = Math.floor(tmin / 2) * 2, t1 = Math.ceil(tmax / 2) * 2, nT = Math.max(1, (t1 - t0) / 2), nW = Math.max(1, Math.ceil(wmax / 2));
+    var grid = [], a, b;
+    for (a = 0; a < nT; a++) { var gr0 = []; for (b = 0; b < nW; b++) gr0.push(0); grid.push(gr0); }
+    R.forEach(function (r) {
+      if (isNaN(r.T) || isNaN(r.W)) return;
+      var ia = Math.min(nT - 1, Math.floor((r.T - t0) / 2)), ib = Math.min(nW - 1, Math.floor(r.W / 2));
+      if (ia >= 0 && ib >= 0) grid[ia][ib]++;
+    });
+    var gh = pad('T \\ W', 9); for (b = 0; b < nW; b++) gh += ' ' + padL((b * 2) + '-' + (b * 2 + 2), 6);
+    gh += ' ' + padL('Total', 6);
+    P1(gh);
+    for (a = 0; a < nT; a++) {
+      var tt = 0, gr = pad((t0 + 2 * a) + ' a ' + (t0 + 2 * a + 2), 9);
+      for (b = 0; b < nW; b++) { tt += grid[a][b]; gr += ' ' + padL(grid[a][b] || '.', 6); }
+      P1(gr + ' ' + padL(tt, 6));
+    }
+    P1('Para Olgyay: los pares de cada mes son (Tmáx diaria media, HRmín) y (Tmín diaria media, HRmáx) de la tabla mensual.');
+
+    // ---- Radiación sobre superficies y geometría solar ----
+    var lat = hasSite ? site.lat : st.lat, lon = hasSite ? site.lon : st.lon, tz = parseFloat(st.tz) || 0;
+    var fac = [{ n: 'N', az: 0 }, { n: 'E', az: 90 }, { n: 'S', az: 180 }, { n: 'O', az: 270 }];
+    var rad = Math.PI / 180, phi = lat * rad;
+    var S = []; for (k = 0; k < 12; k++) S.push({ H: 0, N: 0, E: 0, S: 0, O: 0 });
+    R.forEach(function (r) {
+      if (isNaN(r.G) || r.G <= 0) { return; }
+      var n = CUM[r.mo] + r.dy, dl = decl(n), ts = (r.hr + 0.5) + (4 * (lon - 15 * tz) + eot(n)) / 60, om = 15 * (ts - 12) * rad;
+      var up = Math.sin(dl) * Math.sin(phi) + Math.cos(dl) * Math.cos(phi) * Math.cos(om);
+      var nn = Math.sin(dl) * Math.cos(phi) - Math.cos(dl) * Math.sin(phi) * Math.cos(om), ee = -Math.cos(dl) * Math.sin(om);
+      var s = S[r.mo]; s.H += r.G;
+      fac.forEach(function (fc) {
+        var g = fc.az * rad, cosT = Math.sin(g) * ee + Math.cos(g) * nn;   // superficie vertical: componente vertical del vector normal = 0
+        var beam = up > 0.02 && cosT > 0 ? r.DN * cosT : 0;
+        s[fc.n] += beam + r.DF * 0.5 + r.G * 0.2 * 0.5;
+      });
+    });
+    P1('');
+    P1('RADIACIÓN SOBRE FACHADAS Y HORIZONTAL (kWh/m²·día; modelo de cielo isotrópico con albedo 0.2, sin sombras ni obstrucciones: SUPUESTO declarado; latitud usada ' + f(lat, 3) + ' ' + (hasSite ? '(terreno)' : '(estación)') + ')');
+    var c4 = ['Mes', 'Horizontal', 'Fachada N', 'Fachada E', 'Fachada S', 'Fachada O'], w4 = [4, 10, 9, 9, 9, 9];
+    P1(c4.map(function (x, j) { return pad(x, w4[j]); }).join(' | '));
+    var sa = { H: 0, N: 0, E: 0, S: 0, O: 0 };
+    for (k = 0; k < 12; k++) {
+      var s = S[k], dd2 = M[k].days || 1;
+      Object.keys(sa).forEach(function (z) { sa[z] += s[z] / 1000; });
+      P1([MES[k], f(s.H / 1000 / dd2, 2), f(s.N / 1000 / dd2, 2), f(s.E / 1000 / dd2, 2), f(s.S / 1000 / dd2, 2), f(s.O / 1000 / dd2, 2)].map(function (x, j) { return pad(x, w4[j]); }).join(' | '));
+    }
+    P1('Año (kWh/m²·año): horizontal ' + f(sa.H, 0) + ' · N ' + f(sa.N, 0) + ' · E ' + f(sa.E, 0) + ' · S ' + f(sa.S, 0) + ' · O ' + f(sa.O, 0));
+    P1('');
+    P1('SOL EN LOS SOLSTICIOS Y EQUINOCCIOS (latitud ' + f(lat, 3) + '; declinación de la fecha; altitud y azimut al mediodía solar; azimut medido desde el norte hacia el este)');
+    P1(['Fecha', 'Declinación', 'Altitud mediodía', 'Azimut mediodía', 'Salida (azimut)', 'Puesta (azimut)', 'Horas de sol'].map(function (x, j) { return pad(x, [17, 11, 16, 15, 15, 15, 12][j]); }).join(' | '));
+    [['21 de diciembre', 355], ['21 de marzo', 80], ['21 de junio', 172], ['22 de septiembre', 265]].forEach(function (d) {
+      var dl = decl(d[1]), alt = 90 - Math.abs(lat - dl / rad), azn = dl / rad > lat ? 0 : 180;
+      var cz = Math.sin(dl) / Math.cos(phi), saz = Math.acos(Math.max(-1, Math.min(1, cz))) / rad, hs = 2 / 15 * Math.acos(Math.max(-1, Math.min(1, -Math.tan(phi) * Math.tan(dl)))) / rad;
+      P1([d[0], f(dl / rad, 1) + '°', f(alt, 1) + '°', azn + '° (' + (azn === 0 ? 'norte' : 'sur') + ')', f(saz, 0) + '°', f(360 - saz, 0) + '°', f(hs, 1) + ' h'].map(function (x, j) { return pad(x, [17, 11, 16, 15, 15, 15, 12][j]); }).join(' | '));
+    });
+
+    // ---- Indicadores de lectura por estrategia ----
+    var cnt = { cold: 0, coldSun: 0, hot: 0, hotSun: 0, hotWind: 0, hotDry: 0, humid: 0, dry: 0, nightComf: 0, nightHot: 0, nightCold: 0 }, twbHot = acc(), hotRh = acc(), hotWs = acc();
+    R.forEach(function (r) {
+      if (isNaN(r.T)) return;
+      var q = cf[r.mo], day = r.G > 0, P = isNaN(r.P) ? Pm : r.P;
+      if (!isNaN(r.RH)) { if (r.RH >= 80) cnt.humid++; if (r.RH < 30) cnt.dry++; }
+      if (r.T < q.lo) { cnt.cold++; if (r.G >= 300) cnt.coldSun++; if (!day) cnt.nightCold++; }
+      else if (r.T > q.hi) {
+        cnt.hot++; if (r.G >= 300) cnt.hotSun++; if (r.WS >= 1) cnt.hotWind++;
+        if (!isNaN(r.RH)) { add(hotRh, r.RH); add(twbHot, twb(r.T, r.RH, P)); if (r.RH < 40) cnt.hotDry++; }
+        if (!isNaN(r.WS)) add(hotWs, r.WS);
+        if (!day) cnt.nightHot++;
+      } else if (!day) cnt.nightComf++;
+    });
+    var rg = 0; for (k = 0; k < 12; k++) if (mean(M[k].tmax) - mean(M[k].tmin) >= 10) rg++;
+    var rangeAll = 0; for (k = 0; k < 12; k++) rangeAll += mean(M[k].tmax) - mean(M[k].tmin); rangeAll /= 12;
+    var pct = function (x, y) { return y ? f(100 * x / y, 1) + ' %' : 's/d'; };
+    P1('');
+    P1('LECTURA POR ESTRATEGIA (hechos del clima que cada estrategia de la ficha pide; no deciden por sí solos. Umbrales de lectura: SUPUESTO PROPIO, ajustables: sol aprovechable = radiación global de 300 W/m² o más; viento útil = 1 m/s o más; aire seco = HR menor que 40 %; aire húmedo = HR de 80 % o más. Frío y calor se miden contra la banda de confort mensual de arriba)');
+    P1('E1 Ganancia solar directa / E9 Aislamiento: horas frías ' + cnt.cold + ' (' + pct(cnt.cold, rows) + ' del año); de ellas con sol aprovechable ' + cnt.coldSun + ' (' + pct(cnt.coldSun, cnt.cold) + ')');
+    P1('E2 Masa térmica: rango diario medio anual ' + f(rangeAll, 1) + ' °C; meses con rango de 10 °C o más: ' + rg + ' de 12');
+    P1('E3 Enfriamiento nocturno: horas de noche en confort ' + cnt.nightComf + ' · de noche cálidas ' + cnt.nightHot + ' · de noche frías ' + cnt.nightCold);
+    var noHot = cnt.hot === 0;
+    if (noHot) {
+      P1('E4 Ventilación cruzada / E5 Ventilación selectiva · E6 Protección solar · E7 Enfriamiento evaporativo: no hay horas por encima de la banda de confort en este clima (0 horas cálidas); no hay hechos que lean.');
+    } else {
+    P1('E4 Ventilación cruzada / E5 Ventilación selectiva: horas cálidas ' + cnt.hot + ' (' + pct(cnt.hot, rows) + ' del año); con viento útil ' + cnt.hotWind + ' (' + pct(cnt.hotWind, cnt.hot) + '); HR media en horas cálidas ' + f(mean(hotRh), 0) + ' %; viento medio en horas cálidas ' + f(mean(hotWs), 1) + ' m/s');
+    P1('E6 Protección solar: horas cálidas con sol aprovechable ' + cnt.hotSun + ' (' + pct(cnt.hotSun, cnt.hot) + ' de las horas cálidas)');
+    P1('E7 Enfriamiento evaporativo: horas cálidas con aire seco ' + cnt.hotDry + ' (' + pct(cnt.hotDry, cnt.hot) + ' de las horas cálidas); Tbh media en horas cálidas ' + f(mean(twbHot), 1) + ' °C');
+    }
+    P1('E8 Control de humedad: horas con aire húmedo ' + cnt.humid + ' (' + pct(cnt.humid, rows) + ' del año); horas con aire seco ' + cnt.dry + ' (' + pct(cnt.dry, rows) + ')');
+    P1('E10 Patios y microclima: depende del lote y del partido, no del archivo climático.');
+
+    P1('');
+    P1('COMPROBACIONES');
+    P1('Filas de datos leídas: ' + rows + ' · valores ausentes descartados (códigos 99.9, 999, 9999): temperatura ' + bad.T + ', humedad ' + bad.RH + ', presión ' + bad.P + ', radiación ' + bad.R + ', viento ' + bad.W + ', nubosidad ' + bad.C);
+    P1(rain && rain.vals ? 'Precipitación: no sale del EPW (no es una fuente confiable de lluvia); es la cargada en la página, con la fuente indicada arriba.' : 'Precipitación: no se calcula. El archivo EPW no es una fuente confiable de lluvia. Estado: SIN VERIFICAR.');
+    P1('Alcance: datos referenciales de una estación cercana, no mediciones del terreno. Un análisis de campo con instrumentos prevalece.');
+    return { text: out.join('\n'), st: st, rows: rows };
+  }
+
+  function currentSite() {
+    return {
+      lat: parseFloat($('slat').value), lon: parseFloat($('slon').value), elev: parseFloat($('selev').value)
+    };
+  }
+
+  function currentRain() {
+    var el = $('rain'), info = $('raininfo'), s = (el.value || '').trim();
+    if (!s) { info.textContent = ''; return null; }
+    var tok = /[\s;]/.test(s) ? s.split(/[\s;]+/).map(function (x) { return x.replace(',', '.'); }) : s.split(',');
+    var vals = tok.filter(function (x) { return x !== ''; }).map(Number);
+    if (vals.length !== 12 || vals.some(function (x) { return !isFinite(x) || x < 0; })) {
+      info.textContent = 'Se leyeron ' + vals.length + ' valores y se necesitan 12 números, de enero a diciembre. Mientras tanto la lluvia queda SIN VERIFICAR.';
+      return null;
+    }
+    var tot = vals.reduce(function (a, b) { return a + b; }, 0);
+    info.textContent = '12 valores leídos · total anual ' + tot.toFixed(0) + ' mm';
+    return { vals: vals, total: tot, src: ($('rainsrc').value || '').trim() };
+  }
+
+  // ---------- GeoJSON: centroide y cota ----------
+  function collectRings(g, out) {
+    if (!g) return;
+    if (g.type === 'FeatureCollection') (g.features || []).forEach(function (ft) { collectRings(ft, out); });
+    else if (g.type === 'Feature') collectRings(g.geometry, out);
+    else if (g.type === 'GeometryCollection') (g.geometries || []).forEach(function (x) { collectRings(x, out); });
+    else if (g.type === 'Polygon' && g.coordinates && g.coordinates[0]) out.push(g.coordinates[0]);
+    else if (g.type === 'MultiPolygon') (g.coordinates || []).forEach(function (pl) { if (pl[0]) out.push(pl[0]); });
+  }
+  function collectProps(g, out) {
+    if (!g) return;
+    if (g.type === 'FeatureCollection') (g.features || []).forEach(function (ft) { collectProps(ft, out); });
+    else if (g.type === 'Feature' && g.properties) out.push(g.properties);
+  }
+  function geoCentroid(gj) {
+    var rings = []; collectRings(gj, rings);
+    if (!rings.length) throw new Error('El GeoJSON no tiene ningún polígono. El terreno debe ser un Polygon o MultiPolygon.');
+    // el anillo de mayor área; centroide ponderado por el área en un plano local
+    var best = null;
+    rings.forEach(function (ring) {
+      var pts = ring.filter(function (q) { return isFinite(q[0]) && isFinite(q[1]); });
+      if (pts.length < 3) return;
+      var lat0 = pts.reduce(function (a, q) { return a + q[1]; }, 0) / pts.length, kx = Math.cos(lat0 * Math.PI / 180);
+      var A = 0, cx = 0, cy = 0;
+      for (var i = 0; i < pts.length; i++) {
+        var a = pts[i], b = pts[(i + 1) % pts.length], x1 = a[0] * kx, y1 = a[1], x2 = b[0] * kx, y2 = b[1], cr = x1 * y2 - x2 * y1;
+        A += cr; cx += (x1 + x2) * cr; cy += (y1 + y2) * cr;
+      }
+      var res;
+      if (Math.abs(A) < 1e-14) res = { lon: pts.reduce(function (s, q) { return s + q[0]; }, 0) / pts.length, lat: lat0, area: 0, n: pts.length, z: pts };
+      else { A /= 2; res = { lon: cx / (6 * A) / kx, lat: cy / (6 * A), area: Math.abs(A), n: pts.length, z: pts }; }
+      if (!best || res.area > best.area) best = res;
+    });
+    if (!best) throw new Error('No pude leer los vértices del polígono.');
+    return best;
+  }
+  function geoElev(gj, ring) {
+    var props = []; collectProps(gj, props);
+    var mn = null, mx = null, one = null, key = null;
+    props.forEach(function (pr) {
+      Object.keys(pr).forEach(function (k) {
+        var v = pr[k]; if (typeof v !== 'number' || !isFinite(v)) return;
+        var kk = k.toLowerCase();
+        if (!/cota|elev|altitud|msnm|snm/.test(kk)) return;
+        if (/min/.test(kk)) mn = v; else if (/max/.test(kk)) mx = v; else if (one === null) { one = v; key = k; }
+      });
+    });
+    if (mn !== null && mx !== null) return { v: (mn + mx) / 2, note: 'promedio de la cota mínima (' + mn + ') y la máxima (' + mx + ') que declara el archivo' };
+    if (one !== null) return { v: one, note: 'valor «' + key + '» del archivo' };
+    var zs = ring.z.filter(function (q) { return q.length > 2 && isFinite(q[2]); }).map(function (q) { return q[2]; });
+    if (zs.length) return { v: zs.reduce(function (a, b) { return a + b; }, 0) / zs.length, note: 'promedio de la tercera coordenada de los vértices' };
+    return null;
+  }
+  // ---------- Lluvia automática: NASA POWER (climatología mensual, MERRA-2) ----------
+  var DIAS = [31, 28.25, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  var MK = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+  var rainSeq = 0;
+  async function fetchRain() {
+    var lat = parseFloat($('slat').value), lon = parseFloat($('slon').value), info = $('raininfo');
+    if (!isFinite(lat) || !isFinite(lon)) { info.textContent = 'Primero carga el GeoJSON o escribe latitud y longitud.'; return; }
+    var my = ++rainSeq;
+    info.textContent = 'Consultando NASA POWER…';
+    try {
+      var url = 'https://power.larc.nasa.gov/api/temporal/climatology/point?parameters=PRECTOTCORR&community=RE&longitude=' + lon.toFixed(4) + '&latitude=' + lat.toFixed(4) + '&format=JSON';
+      var ctl = new AbortController(), to = setTimeout(function () { ctl.abort(); }, 20000);
+      var resp = await fetch(url, { signal: ctl.signal }); clearTimeout(to);
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      var js = await resp.json(), par = js.properties.parameter.PRECTOTCORR;
+      var vals = MK.map(function (k, j) { var v = par[k]; if (!(v >= 0)) throw new Error('dato faltante'); return Math.round(v * DIAS[j]); });
+      if (my !== rainSeq) return;
+      $('rain').value = vals.join(' ');
+      $('rainsrc').value = 'NASA POWER, climatología mensual 2001-2025 (MERRA-2, malla de baja resolución, dato de modelo y no de estación; en los Andes suele subestimar la lluvia), convertida de mm/día a mm/mes';
+      currentRain(); render();
+      info.textContent = '12 valores obtenidos de NASA POWER · total anual ' + vals.reduce(function (a, b) { return a + b; }, 0) + ' mm · referencial, no de estación';
+    } catch (e) {
+      if (my !== rainSeq) return;
+      info.textContent = 'No pude consultar NASA POWER (' + (e && e.message ? e.message : 'sin conexión') + '). Si abres esta página desde un enlace de Claude, el navegador bloquea la consulta: abre el archivo .html guardado en tu computador. Mientras tanto la lluvia queda SIN VERIFICAR.';
+    }
+  }
+  $('getrain').addEventListener('click', fetchRain);
+
+  async function handleGeo(file) {
+    var info = $('geoinfo');
+    try {
+      var gj = JSON.parse(decode(await file.arrayBuffer()));
+      var c = geoCentroid(gj);
+      $('slat').value = c.lat.toFixed(6); $('slon').value = c.lon.toFixed(6);
+      var ev = geoElev(gj, c), msg = 'Centroide del polígono (' + c.n + ' vértices): latitud ' + c.lat.toFixed(6) + ', longitud ' + c.lon.toFixed(6) + '.';
+      if (ev) { $('selev').value = ev.v.toFixed(1); msg += ' Cota ' + ev.v.toFixed(1) + ' m (' + ev.note + '). Revísala: es referencial.'; }
+      else { $('selev').value = ''; msg += ' El archivo no declara cota: escríbela a mano si la tienes, o queda SIN VERIFICAR.'; }
+      info.textContent = msg; info.style.color = '';
+      render();
+      if (!($('rain').value || '').trim()) fetchRain();
+    } catch (e) {
+      info.textContent = e instanceof SyntaxError ? 'No pude leer ese archivo como GeoJSON.' : e.message;
+    }
+  }
+
+  function render() {
+    if (!raw) return;
+    var status = $('status');
+    try {
+      var res = analyze(raw.text, raw.name, currentSite(), currentRain());
+      lastText = res.text;
+      lastName = res.st.name;
+      $('out').value = lastText;
+      $('result').hidden = false;
+      var kb = (lastText.length / 1024).toFixed(1);
+      var tok = Math.round(lastText.length / 3);
+      $('meta').textContent = res.st.name + ' · ' + res.rows + ' filas leídas · ' + kb + ' KB · unos ' + tok.toLocaleString('es-PE') + ' tokens (estimado)';
+      status.className = '';
+      status.textContent = 'Listo. Copia el paquete y pégalo en el chat, o descárgalo como .md para volver a adjuntarlo después.';
+    } catch (e) {
+      $('result').hidden = true;
+      status.className = 'err';
+      status.textContent = e.message;
+    }
+  }
+
+  async function handleFile(file) {
+    var status = $('status');
+    status.className = '';
+    status.textContent = 'Leyendo ' + file.name + '…';
+    try {
+      var name = file.name, buf;
+      if (/\.zip$/i.test(name)) {
+        if (typeof JSZip === 'undefined') throw new Error('No pude abrir el .zip en este navegador. Extrae el archivo .epw y cárgalo directamente.');
+        var zip = await JSZip.loadAsync(file);
+        var entry = null;
+        zip.forEach(function (p, ent) { if (!entry && /\.epw$/i.test(p) && !ent.dir) entry = ent; });
+        if (!entry) throw new Error('El .zip no contiene un archivo .epw.');
+        name = entry.name.split('/').pop();
+        buf = await entry.async('arraybuffer');
+      } else {
+        buf = await file.arrayBuffer();
+      }
+      raw = { text: decode(buf), name: name };
+      render();
+    } catch (e) {
+      raw = null;
+      $('result').hidden = true;
+      status.className = 'err';
+      status.textContent = e.message || 'No pude leer el archivo.';
+    }
+  }
+
+  $('file').addEventListener('change', function (e) { if (e.target.files[0]) handleFile(e.target.files[0]); });
+  var drop = $('drop');
+  ['dragenter', 'dragover'].forEach(function (ev) {
+    drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add('over'); });
+  });
+  ['dragleave', 'drop'].forEach(function (ev) {
+    drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.remove('over'); });
+  });
+  drop.addEventListener('drop', function (e) {
+    var fl = e.dataTransfer && e.dataTransfer.files;
+    if (fl && fl[0]) handleFile(fl[0]);
+  });
+  ['slat', 'slon', 'selev', 'rain', 'rainsrc'].forEach(function (id) { $(id).addEventListener('input', function () { if (id === 'rain') currentRain(); render(); }); });
+  $('geo').addEventListener('change', function (e) { if (e.target.files[0]) handleGeo(e.target.files[0]); });
+
+  $('copy').addEventListener('click', function () {
+    var btn = $('copy'), ta = $('out');
+    function done() { btn.textContent = 'Copiado'; setTimeout(function () { btn.textContent = 'Copiar paquete'; }, 1800); }
+    function fallback() {
+      ta.focus(); ta.select();
+      try { if (document.execCommand('copy')) { done(); return; } } catch (e) {}
+      btn.textContent = 'Selecciona y copia con Ctrl+C';
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(lastText).then(done, fallback);
+    } else fallback();
+  });
+
+  function slug(t) {
+    return String(t || 'paquete').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^A-Za-z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || 'paquete';
+  }
+
+  $('dl').addEventListener('click', function () {
+    if (!lastText) return;
+    var btn = $('dl'), url = null, a = document.createElement('a');
+    try {
+      url = URL.createObjectURL(new Blob([lastText], { type: 'text/markdown;charset=utf-8' }));
+      a.href = url;
+      a.download = 'paquete-climatico-' + slug(lastName) + '.md';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      btn.textContent = 'Descargado';
+      setTimeout(function () { btn.textContent = 'Descargar .md'; }, 1800);
+    } catch (e) {
+      btn.textContent = 'No se pudo descargar: copia el texto';
+    } finally {
+      if (url) setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+    }
+  });
+})();
+</script>
