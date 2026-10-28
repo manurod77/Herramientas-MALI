@@ -14,6 +14,7 @@ Sitio estático: una portada y cuatro herramientas, todas en un solo archivo HTM
 | `plantilla-craft-herramientas.html` | El prompt con el que se construyó el visualizador, y su plantilla en blanco |
 | `manual-visualizador.html` | Manual de uso del visualizador solar |
 | `manual-sketchup.html` | Guía para conectar la IA con SketchUp |
+| `guia-crear-herramientas.html` | Guía de método: cómo crear herramientas con asistencia de IA |
 
 ## Publicarlo en Vercel desde esta carpeta
 
@@ -46,3 +47,7 @@ Desde entonces, cada cambio que subas al repositorio se publica solo.
 ## Agregar una herramienta nueva
 
 Copia su archivo HTML a esta carpeta y añade una tarjeta en `index.html`, duplicando un bloque `<a class="card">`. En la sección «En preparación» está la tarjeta de las herramientas de partículas de viento y lluvia, para reemplazarla cuando existan.
+
+## Autoría
+
+Ver `LICENCIA.md`. Las herramientas se entregan por enlace al sitio, no repartiendo los archivos.

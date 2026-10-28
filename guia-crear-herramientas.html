@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Crear herramientas con IA</title>
+<meta name="description" content="Método para construir herramientas de cálculo con asistencia de inteligencia artificial, en arquitectura o en cualquier otro campo.">
+<style>
+  :root {
+    --bg: #f7f5f1; --surface: #ffffff; --fg: #14323f; --mute: #4a5d68;
+    --line: #dcd7cf; --teal: #2f7d83; --orange: #c9712e; --code-bg: #f1ede6;
+    --font-body: "DejaVu Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+    --font-data: "DejaVu Sans Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #10242d; --surface: #16303b; --fg: #e8eef0; --mute: #9fb3bb;
+      --line: #27454f; --teal: #5aa8ad; --orange: #e08c48; --code-bg: #0d1f27;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #10242d; --surface: #16303b; --fg: #e8eef0; --mute: #9fb3bb;
+    --line: #27454f; --teal: #5aa8ad; --orange: #e08c48; --code-bg: #0d1f27;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 400 16px/1.6 var(--font-body); }
+  .wrap {
+    max-width: 760px; margin: 0 auto;
+    padding-left: max(20px, env(safe-area-inset-left, 0px));
+    padding-right: max(20px, env(safe-area-inset-right, 0px));
+    padding-block: 40px 64px;
+  }
+  .back { font-size: 13px; color: var(--teal); text-decoration: none; display: inline-block; margin-bottom: 26px; }
+  .back:hover { text-decoration: underline; }
+  .kicker { font: 500 11.5px var(--font-body); letter-spacing: .16em; text-transform: uppercase; color: var(--mute); margin: 0 0 10px; }
+  h1 { font-size: clamp(26px, 5vw, 36px); line-height: 1.15; margin: 0 0 14px; text-wrap: balance; }
+  .lead { font-size: 17px; color: var(--mute); margin: 0 0 4px; }
+  .rule { height: 3px; width: 54px; background: var(--orange); margin: 24px 0 0; border-radius: 2px; }
+  h2 {
+    font-size: 20px; margin: 46px 0 12px; padding-top: 14px; border-top: 1px solid var(--line);
+    line-height: 1.25; text-wrap: balance;
+  }
+  h2 .n { color: var(--orange); font-variant-numeric: tabular-nums; margin-right: 8px; }
+  h3 { font-size: 15.5px; margin: 26px 0 8px; color: var(--teal); }
+  p { margin: 0 0 14px; }
+  ul, ol { margin: 0 0 14px; padding-left: 22px; }
+  li { margin-bottom: 7px; }
+  li::marker { color: var(--mute); }
+  a { color: var(--teal); }
+  strong { font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; margin: 0 0 16px; font-size: 14.5px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { background: var(--surface); font-weight: 600; font-size: 13px; }
+  .tabla-wrap { overflow-x: auto; }
+  .caja {
+    background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--teal);
+    border-radius: 4px; padding: 14px 16px; margin: 0 0 18px; font-size: 14.5px;
+  }
+  .caja.dato { border-left-color: var(--orange); }
+  .caja p:last-child { margin-bottom: 0; }
+  .et {
+    font: 500 10.5px var(--font-data); letter-spacing: .1em; text-transform: uppercase;
+    color: var(--orange); display: block; margin-bottom: 6px;
+  }
+  .caja .et { color: var(--teal); }
+  .caja.dato .et { color: var(--orange); }
+  code { font-family: var(--font-data); font-size: 13.5px; background: var(--code-bg); padding: 1px 5px; border-radius: 3px; }
+  footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--mute); }
+</style>
+</head>
+<body>
+<main class="wrap">
+
+  <a class="back" href="index.html">← Herramientas bioclimáticas</a>
+
+  <p class="kicker">MALI · Módulo 3 · Guía</p>
+  <h1>Crear herramientas con asistencia de IA</h1>
+  <p class="lead">Cómo se construye una herramienta que calcula, en arquitectura o en cualquier otro campo, y cómo se comprueba que lo que calcula es correcto.</p>
+  <div class="rule"></div>
+
+  <h2><span class="n">1</span>Qué se puede hacer así y qué no</h2>
+
+  <p>Una herramienta de este tipo es un solo archivo que se abre en el navegador. No se instala, no necesita un servidor y no envía nada a ninguna parte: el usuario carga su archivo, la página calcula en su propio computador y muestra el resultado. Esa forma resuelve bastante más de lo que parece, y hay cosas que no resuelve.</p>
+
+  <div class="tabla-wrap">
+  <table>
+    <thead><tr><th style="width:50%">Cabe en un archivo</th><th>No cabe, o no sin algo más</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Leer un archivo que el usuario carga y calcular sobre él: una planilla, un archivo climático, un archivo de geometría.</td>
+        <td>Datos en vivo que exigen una clave privada. La clave quedaría a la vista de cualquiera que abra el archivo.</td>
+      </tr>
+      <tr>
+        <td>Convertir un formato en otro, o un archivo pesado en un resumen compacto.</td>
+        <td>Guardar información de varios usuarios a la vez. Eso necesita un servidor y una base de datos.</td>
+      </tr>
+      <tr>
+        <td>Comparar alternativas y mostrar la diferencia entre ellas.</td>
+        <td>Archivos de cientos de megabytes o cálculos que tardan minutos: el navegador se queda sin memoria o se congela.</td>
+      </tr>
+      <tr>
+        <td>Dibujar: un gráfico, un diagrama, un modelo en tres dimensiones sencillo.</td>
+        <td>Sustituir un cálculo normado del que alguien responde profesionalmente.</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p>La prueba para decidir es corta: si el trabajo consiste en <strong>leer algo, calcular y mostrar el resultado</strong>, cabe en un archivo. Si además hay que recordar, compartir entre personas o proteger una clave, ya no.</p>
+
+  <h2><span class="n">2</span>De la necesidad al encargo</h2>
+
+  <p>El error más común es pedir la herramienta antes de saber qué tiene que hacer. La IA responde igual, y entrega algo que funciona pero no sirve. Antes de pedir una sola línea de código conviene escribir cinco cosas, que caben en media página.</p>
+
+  <ol>
+    <li><strong>Qué entra.</strong> El formato exacto: no «datos del clima», sino «un archivo .epw de 8 760 filas». No «las ventas», sino «un archivo .csv con fecha, producto y cantidad».</li>
+    <li><strong>Qué sale.</strong> Y sobre todo, qué decisión toma el usuario con ese resultado. Una herramienta que entrega cifras que no deciden nada es un adorno.</li>
+    <li><strong>Qué controla el usuario.</strong> Solo los parámetros que de verdad cambian la decisión. Cada control de más es una oportunidad de equivocarse.</li>
+    <li><strong>Qué pasa cuando falta un dato.</strong> Es la mitad del trabajo real. Si el archivo no trae la cota, o no trae la lluvia, la herramienta lo dice en vez de inventarla.</li>
+    <li><strong>Con qué se va a comparar el resultado.</strong> Este punto decide si la herramienta sirve o no, y por eso tiene su propia sección más abajo.</li>
+  </ol>
+
+  <h2><span class="n">3</span>El prompt que la construye</h2>
+
+  <p>Con esas cinco cosas escritas, el encargo se arma con la misma estructura que el resto del curso: contexto, rol, acción, formato, y tono y criterios. El <a href="generador-craft.html">generador de prompts</a> la arma por partes, y la <a href="plantilla-craft-herramientas.html">plantilla de herramientas</a> muestra el prompt completo con el que se construyó el visualizador solar de vanos.</p>
+
+  <p>Hay cuatro cosas que no pueden faltar en la acción, y son las que separan una herramienta utilizable de una demostración bonita.</p>
+
+  <h3>El cálculo, declarado</h3>
+  <p>No «calcula la radiación sobre el plano inclinado», sino el procedimiento con sus fórmulas y sus unidades, paso por paso. Si no sabes el procedimiento, ese es el trabajo previo: búscalo, entiéndelo y escríbelo. Una IA que elige sola el método elige uno cualquiera, y nadie se entera hasta que el resultado se compara con algo.</p>
+
+  <h3>Un solo archivo, sin dependencias externas</h3>
+  <p>Todo adentro: el cálculo, los estilos y la interfaz. Una herramienta que carga una biblioteca desde internet deja de funcionar el día que esa dirección cambia, y no sirve sin conexión.</p>
+
+  <h3>Qué muestra cuando no hay datos</h3>
+  <p>La primera pantalla, antes de que el usuario cargue nada, tiene que explicar qué entra y qué sale. Si además trae un ejemplo cargado, cualquiera entiende la herramienta en diez segundos.</p>
+
+  <h3>El estado de cada cifra, a la vista</h3>
+  <p>Lo que se midió, lo que se supuso y lo que falta verificar se distinguen en la interfaz, no en la cabeza de quien la programó. Una cifra supuesta que se ve igual que una medida termina en un informe como si fuera medida.</p>
+
+  <h2><span class="n">4</span>Cómo se verifica</h2>
+
+  <p>Una herramienta que calcula y que nadie comprobó es una opinión con decimales. La IA escribe código que corre sin errores y entrega números con una seguridad que no distingue entre un resultado correcto y uno con un signo cambiado. La verificación no es opcional y no la hace la IA: la haces tú.</p>
+
+  <p>El método es siempre el mismo: <strong>el mismo caso, calculado por dos caminos independientes</strong>.</p>
+
+  <div class="caja dato">
+    <span class="et">Ejemplo verificado</span>
+    <p>El motor de cálculo solar de este curso se comparó contra <a href="https://re.jrc.ec.europa.eu/pvg_tools/">PVGIS</a>, el servicio de la Comisión Europea, para el mismo sitio, la misma inclinación y la misma orientación. La radiación sobre el plano inclinado quedó entre 1,6 y 2,3 % por debajo de PVGIS, y la producción fotovoltaica entre 3,9 y 4,3 % por encima.</p>
+    <p>Esas diferencias no se corrigieron ni se escondieron: se declararon. Un desvío conocido y acotado es información útil; un desvío ignorado es un error esperando aparecer en un informe.</p>
+  </div>
+
+  <p>Cuando no existe una fuente con qué comparar, quedan tres comprobaciones que siempre se pueden hacer:</p>
+
+  <ul>
+    <li><strong>Los extremos conocidos.</strong> Un caso cuyo resultado se sabe de antemano: el sol al mediodía del solsticio en una latitud conocida, un día sin radiación, un total que tiene que dar cero.</li>
+    <li><strong>Las unidades.</strong> Que el resultado cierre dimensionalmente. Un factor de 1 000 fuera de lugar es el error más frecuente y el más fácil de ver así.</li>
+    <li><strong>El orden de magnitud.</strong> Si el resultado se aleja de lo que la experiencia del campo dice, hay algo mal, en la herramienta o en el dato de entrada.</li>
+  </ul>
+
+  <p>La comprobación se anota junto a la herramienta, con la fuente y la fecha. Si no queda escrita, dentro de tres meses nadie recuerda si se hizo.</p>
+
+  <h2><span class="n">5</span>Cómo se corrige y cómo crece</h2>
+
+  <ul>
+    <li><strong>Guarda la versión que funciona</strong> antes de tocar nada. Es la única manera de volver cuando un cambio rompe algo que ya estaba bien.</li>
+    <li><strong>Un cambio por vez</strong>, y se prueba antes del siguiente. Tres cambios juntos que fallan no dicen cuál de los tres falló.</li>
+    <li><strong>Pide el archivo completo</strong>, no el fragmento que cambia. Los fragmentos se pegan en el lugar equivocado y rompen lo que funcionaba.</li>
+    <li><strong>Describe el error por su efecto</strong>, no por tu diagnóstico: qué hiciste, qué esperabas y qué pasó en vez de eso.</li>
+    <li><strong>Cuando la conversación se hace larga</strong>, pide un resumen del estado de la herramienta y continúa en un chat nuevo con ese resumen y el archivo.</li>
+  </ul>
+
+  <h2><span class="n">6</span>Dónde vive después</h2>
+
+  <div class="tabla-wrap">
+  <table>
+    <thead><tr><th style="width:28%">Dónde</th><th>Cuándo conviene</th></tr></thead>
+    <tbody>
+      <tr><td>Un archivo en tu computador</td><td>Uso propio. Se abre con doble clic y no depende de nada.</td></tr>
+      <tr><td>Un sitio publicado</td><td>Cuando otras personas la van a usar. Un enlace estable evita repartir archivos por correo y que cada uno tenga una versión distinta.</td></tr>
+      <tr><td>Un repositorio conectado al sitio</td><td>Cuando la herramienta va a cambiar con el tiempo. Cada cambio queda registrado, se puede volver atrás y el sitio se actualiza solo.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p>Publicar una herramienta la hace pública: cualquiera con el enlace la abre. Eso está bien para una herramienta de cálculo que no guarda datos de nadie, y no está bien para algo que lleve información de un cliente o un método que no quieras repartir.</p>
+
+  <h2><span class="n">7</span>Dos ejemplos</h2>
+
+  <h3>Arquitectura: el paquete climático</h3>
+  <p><strong>Necesidad.</strong> El archivo climático de una estación pesa alrededor de 1,6 MB. Adjuntarlo a una IA gasta buena parte del límite de uso en leer y calcular, antes de que empiece el trabajo que de verdad importa, que es interpretar.</p>
+  <p><strong>Encargo.</strong> Entra un archivo .epw y el polígono del terreno; sale un texto compacto con la ficha de la estación, las variables por mes y las cifras que necesitan los tres instrumentos de lectura climática. El usuario no controla nada del cálculo: solo carga y copia.</p>
+  <p><strong>Verificación.</strong> Las cifras del paquete se compararon con la lectura directa del mismo archivo, variable por variable.</p>
+  <p><strong>Resultado.</strong> De 1,6 MB a unos 15 KB, alrededor de 5 000 tokens. La IA gasta su límite en decidir, no en contar filas. Es la <a href="paquete-climatico.html">primera herramienta del sitio</a>.</p>
+
+  <h3>Otro campo: reposición en una tienda</h3>
+  <p class="caja"><span class="et">Ejemplo construido</span> Este segundo caso no es un proyecto real: está armado para mostrar que el método no depende del rubro.</p>
+  <p><strong>Necesidad.</strong> Saber qué productos reponer esta semana, sin revisar a mano una planilla de miles de líneas.</p>
+  <p><strong>Encargo.</strong> Entra el archivo de ventas en formato .csv con fecha, producto y cantidad; sale la lista de productos ordenada por urgencia de reposición. El usuario controla dos cosas: el período que se mira y los días de inventario que quiere mantener.</p>
+  <p><strong>Qué pasa si falta un dato.</strong> Un producto sin ventas en el período aparece aparte, marcado como sin información, y no se mezcla con los que sí tienen historia.</p>
+  <p><strong>Verificación.</strong> Se compara con el conteo manual de un mes cerrado. Si la lista coincide con lo que el dueño ya sabía que tenía que reponer, la herramienta está bien; si no, hay que entender por qué antes de usarla.</p>
+  <p>Cambian el archivo de entrada y el vocabulario. El método, las cinco preguntas del encargo y la obligación de verificar son los mismos.</p>
+
+  <div class="caja">
+    <span class="et">Alcance</span>
+    <p>Esta guía describe cómo construir una herramienta de cálculo y cómo comprobarla. Comprobada o no, una herramienta así entrega órdenes de magnitud para decidir: no reemplaza un cálculo de especialidad ni la responsabilidad profesional de quien firma.</p>
+  </div>
+
+  <footer>Manuel De la Barra · MALI · Módulo 3 · Uso educativo en el curso · Todos los derechos reservados · 2026</footer>
+
+</main>
+</body>
+</html>
