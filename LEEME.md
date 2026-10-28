@@ -10,6 +10,7 @@ Sitio estático: una portada y cuatro herramientas, todas en un solo archivo HTM
 | `predimensionamiento-solar.html` | Paneles y terma solar, versión breve |
 | `calculadora-solar.html` | Paneles y terma solar, versión completa, hora por hora |
 | `generador-craft.html` | Generador de prompts CRAFT-PRO del Módulo 3 |
+| `generador-craft-imagen.html` | Generador de prompts de visualización arquitectónica para ComfyUI |
 | `plantilla-craft-herramientas.html` | El prompt con el que se construyó el visualizador, y su plantilla en blanco |
 | `manual-visualizador.html` | Manual de uso del visualizador solar |
 | `manual-sketchup.html` | Guía para conectar la IA con SketchUp |
