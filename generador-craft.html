@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CRAFT-PRO · Generador de prompts base · Módulo 3</title>
+<style>
+:root{--bg:#0F2731;--panel:#14323F;--panel2:#1C4C54;--deep:#0B1E26;--line:#2A4A51;--teal:#8ECFC9;--gold:#C9954E;--txt:#EAF2F3;--mut:#9FC0C4;--neg:#D18B6A}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--txt);font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1020px;margin:0 auto;padding:20px 16px 40px}
+header{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:18px;gap:12px;flex-wrap:wrap}
+.eyebrow{color:var(--gold);font-size:10px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;margin-bottom:3px}
+h1{font-size:24px;font-weight:800;margin:0;line-height:1.15}
+.sub{color:var(--mut);font-size:12px;margin:3px 0 0}
+.tabs{display:flex;gap:4px}
+button{font-family:inherit;cursor:pointer;transition:all .13s}
+.tab{padding:5px 12px;border-radius:4px;font-size:11.5px;font-weight:700;border:1px solid var(--line);background:transparent;color:var(--mut)}
+.tab.on{border-color:var(--teal);background:var(--panel);color:var(--teal)}
+.lbl{color:var(--gold);font-size:9.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:6px;display:block}
+.wf-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:14px}
+.wf{padding:8px 9px;border-radius:5px;text-align:left;border:1px solid var(--line);background:var(--deep);color:var(--txt)}
+.wf.on{border-color:var(--teal);background:var(--panel)}
+.wf.on .wf-t{color:var(--teal)}
+.wf-t{font-size:12px;font-weight:700;line-height:1.2}
+.wf-s{color:var(--mut);font-size:9.5px;margin-top:2px}
+.hint{background:var(--panel2);border-left:3px solid var(--gold);padding:7px 11px;border-radius:3px;font-size:11.5px;color:var(--txt);margin-bottom:14px}
+.bar{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.grp{display:flex;gap:4px;align-items:center}
+.grp-l{color:var(--mut);font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-right:2px}
+.opt{padding:5px 12px;border-radius:4px;font-size:11.5px;font-weight:700;border:1px solid var(--line);background:transparent;color:var(--mut)}
+.opt.on{border-color:var(--teal);background:var(--panel);color:var(--teal)}
+.opt.on.gold{border-color:var(--gold);color:var(--gold)}
+.fields{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:12px}
+.f-l{color:var(--mut);font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:3px}
+.f-l b{color:var(--gold);font-weight:700}
+input[type=text],select,textarea{width:100%;padding:7px 9px;border-radius:4px;border:1px solid var(--line);background:var(--deep);color:var(--txt);font-size:12.5px;font-family:inherit}
+textarea{resize:vertical;min-height:52px;line-height:1.45}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--teal)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px}
+.go{width:100%;padding:11px;border-radius:5px;border:none;background:var(--teal);color:var(--bg);font-size:13px;font-weight:700;margin-bottom:18px}
+.out{border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.out-h{background:var(--panel);padding:8px 12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px}
+.out-meta{display:flex;gap:8px;align-items:baseline}
+.out-body{padding:11px 13px;background:var(--deep);font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12px;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+.out-body.json{font-size:10.5px;max-height:420px;overflow-y:auto}
+.out-neg{padding:9px 13px;background:var(--deep);font-family:ui-monospace,monospace;font-size:11px;line-height:1.5;color:var(--neg);white-space:pre-wrap}
+.out-foot{background:var(--panel2);padding:6px 13px;border-top:1px solid var(--line);font-size:11px;color:var(--gold)}
+.btn-s{padding:4px 11px;border-radius:3px;font-size:11px;font-weight:700;border:1px solid var(--line);background:transparent;color:var(--teal);white-space:nowrap}
+.btn-s.mut{color:var(--mut)}
+.btn-s.ok{background:var(--teal);color:var(--bg);border-color:var(--teal)}
+.btn-xs{padding:2px 8px;font-size:10px;border-radius:3px;font-weight:700;border:1px solid var(--line);background:transparent;color:var(--teal)}
+.btn-xs.ok{background:var(--teal);color:var(--bg)}
+.lib-bar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:12px;padding-bottom:11px;border-bottom:1px solid var(--line)}
+.lib-bar input[type=text]{flex:1 1 160px}
+.lib-bar select{width:auto;font-size:11.5px;padding:6px 8px}
+.card{border:1px solid var(--line);border-radius:5px;overflow:hidden;margin-bottom:7px}
+.card-h{background:var(--panel);padding:6px 10px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.card-meta{display:flex;gap:6px;align-items:center;flex:1 1 auto;min-width:0}
+.card-body{padding:9px 12px;background:var(--deep);font-family:ui-monospace,monospace;font-size:11px;line-height:1.5;white-space:pre-wrap;word-break:break-word;max-height:180px;overflow-y:auto}
+.tag-in{flex:1 1 80px;min-width:60px;max-width:200px;padding:2px 6px;border-radius:3px;border:1px dashed var(--line);background:transparent;color:var(--teal);font-size:10.5px;font-family:inherit}
+.badge{font-size:9.5px;background:var(--deep);padding:1px 5px;border-radius:2px;color:var(--mut)}
+.empty{text-align:center;padding:46px 20px;color:var(--mut);font-size:13px;line-height:1.6}
+.note{margin-top:14px;font-size:10.5px;color:var(--mut);text-align:center}
+footer{border-top:1px solid var(--line);padding-top:11px;margin-top:24px;color:#41564D;font-size:10.5px;text-align:center}
+.hide{display:none}
+@media(max-width:820px){.wf-grid{grid-template-columns:repeat(2,1fr)}.fields{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.fields,.two{grid-template-columns:1fr}.wf-grid{grid-template-columns:1fr}}
+.combo{position:relative}
+.combo input{padding-right:28px}
+.combo-arrow{position:absolute;right:0;top:0;bottom:0;width:26px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--mut);font-size:9px;user-select:none}
+.combo-list{position:absolute;top:100%;left:0;right:0;z-index:50;max-height:220px;overflow-y:auto;background:var(--deep);border:1px solid var(--teal);border-radius:4px;margin-top:2px;box-shadow:0 8px 20px rgba(0,0,0,.45)}
+.combo-list.hide{display:none}
+.combo-opt{padding:6px 9px;font-size:12px;color:var(--txt);cursor:pointer}
+.combo-opt:hover,.combo-opt.hl{background:var(--panel2);color:var(--teal)}
+.combo-empty{padding:6px 9px;font-size:11px;color:var(--mut);font-style:italic}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div>
+    <div class="eyebrow">Generador de prompts base</div>
+    <h1>CRAFT-PRO · Módulo 3</h1>
+    <p class="sub">Un párrafo base por tema, listo para convertir en prompt · Cualquier LLM</p>
+  </div>
+  <div class="tabs">
+    <button class="tab on" id="tabGen">Generar</button>
+    <button class="tab" id="tabLib">Biblioteca</button>
+  </div>
+</header>
+
+<section id="viewGen">
+  <span class="lbl">Tema de la sesión</span>
+  <div class="wf-grid" id="wfGrid"></div>
+  <div class="hint" id="hint"></div>
+
+  <div class="two">
+    <div>
+      <label class="f-l">Tu proyecto (se inserta tal cual)</label>
+      <input type="text" id="proyecto" placeholder="conjunto residencial de 40 viviendas">
+    </div>
+    <div>
+      <label class="f-l">Ubicación / terreno (se inserta tal cual)</label>
+      <input type="text" id="ubicacion" placeholder="lote de 1 200 m² en Chancay, frente a vía colectora">
+    </div>
+  </div>
+
+  <div class="fields" id="fields"></div>
+
+  <div style="margin-bottom:12px">
+    <label class="f-l">Datos que ya tienes <b>(pégalos aquí — el prompt obliga a trabajar solo con esto)</b></label>
+    <textarea id="datos" placeholder="Certificado de parámetros 2025: altura máx 5 pisos, retiro 3 m · Archivo climático estación Chancay 2007–2021 · Levantamiento propio del lote"></textarea>
+  </div>
+
+  <div class="bar">
+    <div class="grp"><span class="grp-l">Salida</span><div id="fmtBtns" style="display:flex;gap:4px"></div></div>
+    <div class="grp"><span class="grp-l">Cierre de verificación</span><div id="cierreBtns" style="display:flex;gap:4px"></div></div>
+  </div>
+
+  <button class="go" id="btnGen">Generar</button>
+  <div id="output"></div>
+</section>
+
+<section id="viewLib" class="hide">
+  <div class="lib-bar">
+    <input type="text" id="libSearch" placeholder="Buscar…">
+    <select id="libWf"></select>
+    <select id="libFmt"><option value="all">Todos los formatos</option><option value="parrafo">Párrafo base</option><option value="craft">CRAFT-PRO</option><option value="json">JSON</option></select>
+    <select id="libSort"><option value="new">Recientes</option><option value="old">Antiguos</option><option value="wf">Por tema</option></select>
+    <button class="btn-xs" id="btnExport">Exportar JSON</button>
+  </div>
+  <div id="libList"></div>
+  <div class="note">La biblioteca se guarda en este navegador. "Exportar JSON" descarga el archivo completo.</div>
+</section>
+
+<footer>MALI · Módulo 3 · Herramientas Digitales para Proyectos Arquitectónicos</footer>
+</div>
+<script>
+/* ===== BANCOS TRANSVERSALES ===== */
+const B={
+rol:[
+ "un arquitecto con experiencia en análisis de sitio y proyecto de vivienda",
+ "un arquitecto proyectista que trabaja con normativa peruana",
+ "un consultor en arquitectura bioclimática para clima costero",
+ "un programador arquitectónico que trabaja con datos de usuario",
+ "un especialista en diseño de interiores y ergonomía",
+ "un auditor técnico que revisa el trabajo de otro y busca errores",
+ "un director de arte de visualización arquitectónica",
+ "un docente que corrige y explica por qué algo está mal"],
+tono:[
+ "lenguaje técnico y directo, sin adjetivos de venta",
+ "lenguaje claro para sustentar ante un jurado",
+ "tono crítico: señala lo débil antes que lo logrado",
+ "tono neutral de informe, sin recomendaciones no pedidas",
+ "explicación didáctica, con el razonamiento a la vista",
+ "redacción breve: ninguna frase que no decida algo"],
+control:[
+ "cada afirmación marcada como verificada o sin verificar, con su fuente",
+ "señala explícitamente qué te falta para responder mejor",
+ "no completes vacíos: si un dato no está, decláralo como faltante",
+ "distingue lo que sale de mis datos de lo que sale de tu conocimiento general",
+ "enumera los supuestos que tuviste que hacer, uno por uno",
+ "indica qué decisiones quedan bloqueadas por falta de dato"],
+restriccion:[
+ "trabaja únicamente con los datos que te doy más abajo",
+ "no cites normas ni cifras que no estén en mis datos",
+ "no propongas soluciones formales todavía: solo análisis",
+ "máximo una página; si no cabe, prioriza y dilo",
+ "nada de nombres de arquitectos ni referencias de estilo",
+ "no uses valores por defecto de otra ciudad ni de otro clima"],
+fidelidad:[
+ "tabla en texto plano, sin formato decorativo",
+ "lista numerada, una idea por línea",
+ "texto corrido en párrafos cortos, sin viñetas",
+ "ficha con encabezados fijos que pueda repetir en cada sesión",
+ "esquema jerárquico de tres niveles como máximo",
+ "salida en JSON con claves en español"]
+};
+
+/* ===== TEMAS DEL MÓDULO ===== */
+const WF={
+s01:{es:"S01 · Método CRAFT",sub:"Prompt base y verificación",
+  hint:"El tema de la primera sesión es el método mismo: construir un prompt que se pueda auditar.",
+  accion:["escribe un prompt CRAFT-PRO para el encargo que te describo","reescribe este prompt mío señalando qué ranura de CRAFT le falta","evalúa esta respuesta de la IA y dime qué parte no está sostenida en un dato","convierte este pedido vago en una instrucción verificable"],
+  entrega:["el prompt final más una lista de qué le pedí en cada ranura","la versión corregida más las tres fallas que tenía la original","una tabla de afirmaciones con su estado de verificación","el prompt y las preguntas que deberías haberme hecho antes"]},
+s02:{es:"S02 · Análisis de sitio",sub:"Cuatro capas y trazabilidad",
+  hint:"Reunir, filtrar, analizar y diagramar — en ese orden. El prompt no pide la lámina de una vez.",
+  accion:["clasifica los datos de mi sitio según puedan o no cambiar una decisión de proyecto","analiza las condicionantes de mi terreno a partir de los datos que te doy","identifica qué me falta para cerrar las cuatro capas del análisis de sitio","propón qué debe diagramarse y qué no vale la pena diagramar"],
+  entrega:["una tabla: dato · fuente · fecha · estado · qué decisión afecta","tres condicionantes ordenadas por cuánto restringen el proyecto","la lista de vacíos, ordenada por urgencia","una lista de diagramas con la decisión que sostiene cada uno"]},
+s03:{es:"S03 · Programa arquitectónico",sub:"De la necesidad al cuadro",
+  hint:"El programa se sostiene en el usuario y en la norma, no en un promedio de internet.",
+  accion:["deriva un programa de necesidades a partir del perfil de usuario que te doy","revisa mi cuadro de áreas y señala incoherencias y faltantes","relaciona cada ambiente con las condicionantes del sitio","propón agrupaciones y relaciones de proximidad entre ambientes"],
+  entrega:["cuadro de áreas con área, cantidad y justificación por ambiente","lista de incoherencias, cada una con la razón","matriz de relación ambiente · condicionante","diagrama de relaciones en texto, por grupos"]},
+s04:{es:"S04 · Bioclimático y fachada",sub:"Clima con estación y años",
+  hint:"Ningún dato climático entra sin estación y periodo declarados. Si no los trae, es sin verificar.",
+  accion:["interpreta mi archivo climático y dime qué exige de la envolvente","evalúa mi propuesta de fachada frente a las condiciones de mi clima","propón estrategias pasivas ordenadas por impacto en mi caso","revisa si las estrategias que elegí contradicen mis propios datos"],
+  entrega:["exigencias de la envolvente por orientación","evaluación por criterio, con lo que falla primero","estrategias ordenadas por impacto, con el dato que las sostiene","lista de contradicciones entre estrategia y dato"]},
+s05:{es:"S05 · Layout de interiores",sub:"Uso, circulación y medida",
+  hint:"El layout se discute en medidas y recorridos, no en estilo.",
+  accion:["propón distribuciones alternativas para el ambiente que te describo","revisa mi planta y señala conflictos de circulación y medida","verifica que las dimensiones que uso permitan el uso que declaro","compara dos distribuciones según criterios que yo defino"],
+  entrega:["dos o tres alternativas con su ventaja y su costo","lista de conflictos con la medida que los delata","tabla dimensión declarada vs dimensión necesaria","comparación por criterio, sin elegir por mí"]},
+s06:{es:"S06 · Límites de la IA",sub:"Auditoría y estados del dato",
+  hint:"El ejercicio es encontrar el error, no evitarlo. Un modelo que no se equivoca no se puede auditar.",
+  accion:["audita esta respuesta y clasifica cada afirmación por su estado","dime en qué parte de esta respuesta estás extrapolando","reconstruye de dónde saldría cada dato que afirmaste","señala qué de lo que te pedí no deberías responder"],
+  entrega:["tabla afirmación · estado · fuente · qué haría falta para verificarla","lista de extrapolaciones, marcadas una por una","cadena de origen por dato","lista de lo que queda fuera de tu alcance, con el motivo"]},
+s07:{es:"S07 · Visualización y render",sub:"Imagen que sostiene una idea",
+  hint:"La imagen se juzga por lo que comunica del proyecto, no por lo bonita.",
+  accion:["describe qué debe mostrar cada imagen de mi entrega y por qué","redacta el prompt de imagen a partir de la decisión que quiero comunicar","revisa si esta imagen contradice mi planta o mis datos de sitio","propón un guion de imágenes para sustentar el proyecto completo"],
+  entrega:["lista de imágenes con la decisión que sostiene cada una","el prompt de imagen más lo que deliberadamente deja fuera","lista de contradicciones entre imagen y documento","guion ordenado, con el rol narrativo de cada imagen"]}
+};
+
+const FMTS=[["parrafo","Párrafo base"],["craft","CRAFT-PRO"],["json","JSON"]];
+const CIERRE_TXT="Antes de responder, dime qué datos te faltan. Al final, lista cada afirmación que hiciste y márcala como verificada (sale de mis datos) o sin verificar (sale de tu conocimiento general). No completes ningún vacío por tu cuenta.";
+const NEGATIVO_TXT="No inventes cifras, normas ni fechas. No uses promedios de otra ciudad. No propongas soluciones que no te pedí. No adornes el lenguaje. No des por cierto nada que no esté en los datos entregados.";
+
+/* ===== ESTADO ===== */
+let wfKey="s02", fmt="parrafo", cierre=true, out=null, lib=[];
+const vals={};
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+function bankOf(f){ return f==="accion"||f==="entrega" ? WF[wfKey][f] : B[f]; }
+const FIELDS=["rol","accion","entrega","tono","control","restriccion","fidelidad"];
+const LABELS={rol:"Rol",accion:"Acción",entrega:"Qué entrega",tono:"Tono y criterios",control:"Objetivo de control",restriccion:"Restricciones",fidelidad:"Fidelidad de producción"};
+function resetVals(){ FIELDS.forEach(f=>{ if(!vals[f]||!bankOf(f).includes(vals[f])) vals[f]=bankOf(f)[0]; }); }
+resetVals();
+
+try{const s=localStorage.getItem("craftpro_m3");if(s)lib=JSON.parse(s);}catch(e){}
+const persist=()=>{try{localStorage.setItem("craftpro_m3",JSON.stringify(lib));}catch(e){}};
+
+/* ===== COPIAR ===== */
+function copyTxt(text,btn){
+  const done=()=>{const o=btn.textContent;btn.textContent="✓";btn.classList.add("ok");setTimeout(()=>{btn.textContent=o;btn.classList.remove("ok");},1400);};
+  if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(text).then(done).catch(()=>fallback(text,done));}
+  else fallback(text,done);
+}
+function fallback(text,cb){const ta=document.createElement("textarea");ta.value=text;ta.style.position="fixed";ta.style.opacity="0";document.body.appendChild(ta);ta.select();try{document.execCommand("copy");cb();}catch(e){}document.body.removeChild(ta);}
+
+/* ===== CONSTRUCCIÓN ===== */
+function ctx(){
+  const p=$("proyecto").value.trim()||"el proyecto que estoy desarrollando";
+  const u=$("ubicacion").value.trim();
+  return u? p+", en "+u : p;
+}
+function datos(){ return $("datos").value.trim(); }
+
+function parrafo(){
+  const v=vals, d=datos();
+  let t="Actúa como "+v.rol+". "+cap(v.accion)+", para "+ctx()+". ";
+  t+=cap(v.restriccion)+". Entrega "+v.entrega+", en "+v.fidelidad+", con "+v.tono+". ";
+  t+="Además, "+v.control+".";
+  if(d) t+="\n\nDATOS CON LOS QUE TRABAJAS:\n"+d;
+  if(cierre) t+="\n\n"+CIERRE_TXT;
+  return t;
+}
+
+function craft(){
+  const v=vals, d=datos();
+  let t="";
+  t+="[C] CONTEXTO\n"+ctx()+".";
+  if(d) t+="\nDatos disponibles:\n"+d;
+  else t+="\n(Sin datos adjuntos: todo lo que respondas queda como sin verificar.)";
+  t+="\n\n[R] ROL\n"+cap(v.rol)+".";
+  t+="\n\n[A] ACCIÓN\n"+cap(v.accion)+".";
+  t+="\n\n[F] FORMATO\n"+cap(v.entrega)+". Presentado como "+v.fidelidad+".";
+  t+="\n\n[T] TONO Y CRITERIOS\n"+cap(v.tono)+".";
+  t+="\n\n— OBJETIVO DE CONTROL\n"+cap(v.control)+".";
+  t+="\n\n— RESTRICCIONES\n"+cap(v.restriccion)+".";
+  t+="\n\n— FIDELIDAD DE PRODUCCIÓN\n"+cap(v.fidelidad)+".";
+  if(cierre) t+="\n\n{CIERRE}\n"+CIERRE_TXT;
+  t+="\n\n{NEGATIVO}\n"+NEGATIVO_TXT;
+  return t;
+}
+
+function json(){
+  return {tema:{id:wfKey,nombre:WF[wfKey].es},
+    contexto:{proyecto:$("proyecto").value.trim()||null,ubicacion:$("ubicacion").value.trim()||null,datos:datos()||null},
+    craft:{rol:vals.rol,accion:vals.accion,formato:vals.entrega,tono:vals.tono},
+    control:{objetivo_de_control:vals.control,restricciones:vals.restriccion,fidelidad_de_produccion:vals.fidelidad},
+    cierre:cierre?CIERRE_TXT:null, negativo:NEGATIVO_TXT,
+    parrafo_base:parrafo(), prompt_craft_pro:craft()};
+}
+const cap=s=>s?s.charAt(0).toUpperCase()+s.slice(1):s;
+
+/* ===== RENDER ===== */
+function renderWf(){
+  $("wfGrid").innerHTML=Object.entries(WF).map(([k,w])=>
+    `<button class="wf${k===wfKey?" on":""}" data-wf="${k}"><div class="wf-t">${esc(w.es)}</div><div class="wf-s">${esc(w.sub)}</div></button>`).join("");
+  $("wfGrid").querySelectorAll("[data-wf]").forEach(b=>b.onclick=()=>{
+    wfKey=b.dataset.wf; out=null; vals.accion=null; vals.entrega=null; resetVals(); renderAll();});
+  $("hint").textContent=WF[wfKey].hint;
+}
+function renderBar(){
+  $("fmtBtns").innerHTML=FMTS.map(([k,l])=>
+    `<button class="opt${fmt===k?" on":""}${k==="craft"?" gold":""}" data-f="${k}">${esc(l)}</button>`).join("");
+  $("fmtBtns").querySelectorAll("[data-f]").forEach(b=>b.onclick=()=>{fmt=b.dataset.f;out=null;renderAll();});
+  $("cierreBtns").innerHTML=[[true,"Con {CIERRE}"],[false,"Sin"]].map(([k,l])=>
+    `<button class="opt${cierre===k?" on":""}" data-c="${k}">${l}</button>`).join("");
+  $("cierreBtns").querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>{cierre=b.dataset.c==="true";out=null;renderAll();});
+  $("btnGen").textContent="Generar · "+FMTS.find(f=>f[0]===fmt)[1];
+}
+function renderFields(){
+  $("fields").innerHTML=FIELDS.map(f=>
+    `<div><label class="f-l">${esc(LABELS[f])}</label>
+      <div class="combo" data-combo="${f}">
+        <input type="text" data-f="${f}" value="${esc(vals[f])}" autocomplete="off">
+        <span class="combo-arrow" data-arrow="${f}">&#9662;</span>
+        <div class="combo-list hide" data-list="${f}"></div>
+      </div></div>`).join("");
+  FIELDS.forEach(f=>initCombo(f));
+}
+function comboOptionsHTML(f,q){
+  const items=bankOf(f).filter(o=>!q||o.toLowerCase().includes(q.toLowerCase()));
+  if(!items.length)return '<div class="combo-empty">Sin coincidencias — se usará el texto escrito</div>';
+  return items.map(o=>`<div class="combo-opt" data-val="${esc(o)}">${esc(o)}</div>`).join("");
+}
+function initCombo(f){
+  const wrap=document.querySelector(`[data-combo="${f}"]`);
+  const input=wrap.querySelector("[data-f]"), list=wrap.querySelector("[data-list]"), arrow=wrap.querySelector("[data-arrow]");
+  const open=q=>{list.innerHTML=comboOptionsHTML(f,q||"");list.classList.remove("hide");
+    list.querySelectorAll(".combo-opt").forEach(o=>o.onclick=()=>{input.value=o.dataset.val;vals[f]=o.dataset.val;close();});};
+  const close=()=>list.classList.add("hide");
+  input.oninput=()=>{vals[f]=input.value;open(input.value);};
+  input.onfocus=()=>open("");
+  arrow.onclick=()=>{list.classList.contains("hide")?open(""):close();input.focus();};
+  document.addEventListener("click",e=>{if(!wrap.contains(e.target))close();});
+}
+
+$("btnGen").onclick=()=>{
+  out = fmt==="json" ? {json:true,data:json()} : {json:false,fmt:fmt,txt:fmt==="craft"?craft():parrafo()};
+  renderOut();
+};
+
+function renderOut(){
+  const c=$("output");
+  if(!out){c.innerHTML="";return;}
+  const body=out.json?JSON.stringify(out.data,null,2):out.txt;
+  const words=out.json?0:out.txt.trim().split(/\s+/).length;
+  const lname=FMTS.find(f=>f[0]===(out.json?"json":out.fmt))[1];
+  c.innerHTML=`<div class="out">
+    <div class="out-h">
+      <div class="out-meta">
+        <span style="color:var(--gold);font-weight:700;font-size:12px">${esc(WF[wfKey].es)}</span>
+        <span style="color:var(--mut);font-size:10.5px">${esc(lname)}</span>
+        ${out.json?"":`<span style="color:var(--mut);font-size:10px">${words} palabras</span>`}
+      </div>
+      <div style="display:flex;gap:5px">
+        <button class="btn-s mut" id="btnSave">Guardar</button>
+        <button class="btn-s" id="btnCopyPos">Copiar</button>
+      </div>
+    </div>
+    <div class="out-body${out.json?" json":""}">${esc(body)}</div>
+    ${(!out.json&&out.fmt==="craft")?`<div class="out-h" style="border-top:1px solid var(--line)">
+        <span style="color:var(--neg);font-weight:700;font-size:11px">{NEGATIVO} incluido al final</span>
+        <button class="btn-xs" id="btnCopyNeg">Copiar solo el negativo</button></div>
+      <div class="out-neg">${esc(NEGATIVO_TXT)}</div>`:""}
+    <div class="out-foot">${datos()?"Con datos adjuntos — la IA queda obligada a trabajar sobre ellos.":"Sin datos adjuntos — todo lo que responda queda como sin verificar."}</div>
+  </div>`;
+  $("btnCopyPos").onclick=e=>copyTxt(body,e.target);
+  if($("btnCopyNeg"))$("btnCopyNeg").onclick=e=>copyTxt(NEGATIVO_TXT,e.target);
+  $("btnSave").onclick=()=>{
+    lib.unshift({id:Date.now(),wfKey:wfKey,wf:WF[wfKey].es,fmt:out.json?"json":out.fmt,
+      pos:body,name:"",time:new Date().toLocaleString("es",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})});
+    persist();renderLib();updateTabs();
+    const b=$("btnSave");b.textContent="✓ Guardado";setTimeout(()=>b.textContent="Guardar",1400);};
+}
+
+/* ===== BIBLIOTECA ===== */
+$("libWf").innerHTML='<option value="all">Todos los temas</option>'+
+  Object.entries(WF).map(([k,w])=>`<option value="${k}">${esc(w.es)}</option>`).join("");
+function filtered(){
+  const q=$("libSearch").value.toLowerCase(), fw=$("libWf").value, ff=$("libFmt").value, so=$("libSort").value;
+  let r=lib.filter(i=>(fw==="all"||i.wfKey===fw)&&(ff==="all"||i.fmt===ff)&&
+    (!q||i.pos.toLowerCase().includes(q)||(i.name||"").toLowerCase().includes(q)));
+  if(so==="old")r=r.slice().reverse();
+  else if(so==="wf")r=r.slice().sort((a,b)=>a.wf.localeCompare(b.wf));
+  return r;
+}
+function renderLib(){
+  const list=filtered(), c=$("libList");
+  if(!list.length){
+    c.innerHTML=`<div class="empty">${lib.length===0
+      ?'Sin prompts guardados.<br><span style="font-size:11.5px">Generar un prompt y usar "Guardar" para archivarlo.</span>'
+      :"Ningún resultado con esos filtros."}</div>`;
+    return;}
+  c.innerHTML=list.map(it=>`<div class="card">
+    <div class="card-h">
+      <div class="card-meta">
+        <span style="color:var(--gold);font-weight:700;font-size:10.5px">${esc(it.wf)}</span>
+        <span class="badge">${esc((FMTS.find(f=>f[0]===it.fmt)||["","—"])[1])}</span>
+        <input class="tag-in" data-tag="${it.id}" value="${esc(it.name||"")}" placeholder="+ etiqueta">
+      </div>
+      <div style="display:flex;gap:4px;align-items:center">
+        <span style="color:var(--mut);font-size:9.5px">${esc(it.time)}</span>
+        <button class="btn-xs" data-copy="${it.id}">Copiar</button>
+        <button class="btn-xs" data-del="${it.id}" style="color:var(--mut)">×</button>
+      </div>
+    </div>
+    <div class="card-body">${esc(it.pos)}</div>
+  </div>`).join("");
+  c.querySelectorAll("[data-copy]").forEach(b=>b.onclick=e=>{
+    const it=lib.find(x=>x.id==b.dataset.copy);copyTxt(it.pos,e.target);});
+  c.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{
+    lib=lib.filter(x=>x.id!=b.dataset.del);persist();renderLib();updateTabs();});
+  c.querySelectorAll("[data-tag]").forEach(i=>i.oninput=()=>{
+    const it=lib.find(x=>x.id==i.dataset.tag);if(it){it.name=i.value;persist();}});
+}
+["libSearch","libWf","libFmt","libSort"].forEach(id=>{
+  $(id).addEventListener(id==="libSearch"?"input":"change",renderLib);});
+$("btnExport").onclick=()=>{
+  const data=JSON.stringify(lib.map(({id,...r})=>r),null,2);
+  const blob=new Blob([data],{type:"application/json"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="craftpro_m3_"+new Date().toISOString().slice(0,10)+".json";
+  a.click();URL.revokeObjectURL(a.href);};
+
+/* ===== TABS ===== */
+function updateTabs(){$("tabLib").textContent="Biblioteca"+(lib.length?" ("+lib.length+")":"");}
+$("tabGen").onclick=()=>{$("tabGen").classList.add("on");$("tabLib").classList.remove("on");$("viewGen").classList.remove("hide");$("viewLib").classList.add("hide");};
+$("tabLib").onclick=()=>{$("tabLib").classList.add("on");$("tabGen").classList.remove("on");$("viewLib").classList.remove("hide");$("viewGen").classList.add("hide");renderLib();};
+
+function renderAll(){renderWf();renderBar();renderFields();renderOut();}
+renderAll();renderLib();updateTabs();
+</script>
+</body>
+</html>

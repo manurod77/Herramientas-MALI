@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Plantilla CRAFT · Visualizador Bioclimático Paramétrico</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'DejaVu Sans','Segoe UI',system-ui,sans-serif;
+       color:#1a2733;background:#f5f1ea;line-height:1.5;font-size:11pt;
+       max-width:780px;margin:0 auto;padding:24px 28px}
+  header{margin-bottom:28px;padding-bottom:18px;border-bottom:2px solid #2f7d83}
+  .kicker{font-size:9pt;letter-spacing:3px;color:#c9712e;font-weight:700;margin-bottom:8px;text-transform:uppercase}
+  h1{font-size:26pt;font-weight:800;color:#14323f;line-height:1.1;margin-bottom:6px;letter-spacing:-0.02em}
+  .lead{font-size:11.5pt;color:#46545f;max-width:560px}
+  h2{font-size:14pt;color:#2f7d83;font-weight:700;margin:24px 0 12px;padding-bottom:6px;border-bottom:1px solid #d8d0c2}
+  h3{font-size:11.5pt;color:#14323f;font-weight:700;margin:14px 0 6px}
+  p{margin-bottom:8px}
+
+  .intro{background:#fff;border-left:3px solid #c9712e;padding:14px 18px;margin:18px 0;border-radius:0 6px 6px 0}
+  .intro p{font-size:10.5pt;color:#46545f}
+
+  /* CRAFT rows */
+  .craft-row{display:grid;grid-template-columns:90px 1fr;gap:14px;
+             margin:14px 0;padding:14px;background:#fff;border:1px solid #e2dccc;border-radius:8px;page-break-inside:avoid}
+  .craft-letter{background:#14323f;color:#fff;border-radius:6px;padding:14px 8px;text-align:center;
+                font-weight:800;font-size:9pt;letter-spacing:1.5px;text-transform:uppercase;
+                display:flex;flex-direction:column;justify-content:center;align-items:center;line-height:1.2}
+  .craft-letter .big{font-size:24pt;font-weight:900;color:#c9712e;display:block;line-height:1;margin-bottom:4px}
+  .craft-content h3{margin-top:0}
+  .craft-content p{font-size:10pt}
+  .craft-content ul{padding-left:18px;font-size:10pt;color:#46545f}
+  .craft-content ul li{margin-bottom:3px}
+
+  /* Prompt box — monospace dark */
+  .promptbox{background:#14323f;color:#e6edf3;padding:18px 20px;border-radius:8px;
+             font-family:'DejaVu Sans Mono','Courier New',monospace;font-size:9.5pt;line-height:1.6;
+             white-space:pre-wrap;border-left:4px solid #c9712e;page-break-inside:avoid;
+             margin:14px 0}
+  .promptbox .label{color:#c9712e;font-weight:700}
+  .promptbox .blank{background:#c9712e;color:#14323f;padding:1px 6px;border-radius:3px;font-weight:700}
+  .promptbox .comment{color:#6b8a92;font-style:italic}
+
+  /* Saved rule callout */
+  .savedrule{background:#fff7ed;border:1px solid #f5d8b8;border-left:4px solid #c9712e;
+             padding:12px 16px;margin:14px 0;border-radius:0 6px 6px 0;font-size:10pt}
+  .savedrule strong{color:#c9712e}
+
+  /* Variants list */
+  .variants{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
+  .variant-card{background:#fff;border:1px solid #e2dccc;border-radius:8px;padding:12px;font-size:10pt}
+  .variant-card .var-title{color:#2f7d83;font-weight:700;display:block;margin-bottom:4px}
+  .variant-card .var-desc{color:#46545f;font-size:9.5pt}
+
+  /* Page break helpers */
+  .page-break{page-break-before:always}
+
+  /* Workflow chain */
+  .chain{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:14px 0;font-size:9.5pt}
+  .chain-step{background:#2f7d83;color:#fff;padding:6px 12px;border-radius:6px;font-weight:600}
+  .chain-arrow{color:#c9712e;font-weight:700}
+
+  footer{margin-top:36px;padding-top:14px;border-top:1px solid #d8d0c2;
+         font-size:9pt;color:#6b7681;text-align:center}
+
+  @media print{
+    body{background:#fff;padding:0}
+    .craft-row,.promptbox,.savedrule,.variant-card{box-shadow:none}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="kicker">MALI · M3 · S02 · ANEXO TÉCNICO</div>
+  <h1>Plantilla CRAFT</h1>
+  <p class="lead">Visualizador bioclimático paramétrico con Three.js, EPW y export 3D. Marco para que generes tus propias versiones.</p>
+</header>
+
+<div class="intro">
+  <p>Este documento descompone el prompt que generó el <strong>Visualizador Solar de Vanos</strong> usando el marco <strong>CRAFT</strong>. Cada campo está aislado para que puedas modificarlo y producir una herramienta análoga sobre otro problema bioclimático: ventilación, inercia térmica, iluminación natural, confort psicrométrico, etc.</p>
+</div>
+
+<h2>El marco CRAFT en una mirada</h2>
+
+<div class="chain">
+  <span class="chain-step">C: Contexto</span>
+  <span class="chain-arrow">→</span>
+  <span class="chain-step">R: Rol</span>
+  <span class="chain-arrow">→</span>
+  <span class="chain-step">A: Acción</span>
+  <span class="chain-arrow">→</span>
+  <span class="chain-step">F: Formato</span>
+  <span class="chain-arrow">→</span>
+  <span class="chain-step">T: Tono</span>
+</div>
+
+<p>El orden no es decorativo. <strong>Contexto</strong> y <strong>Rol</strong> definen <em>desde dónde</em> piensa la IA. <strong>Acción</strong> es <em>qué</em> hace. <strong>Formato</strong> y <strong>Tono</strong> son <em>cómo</em> lo entrega. Si saltas C/R, la IA va a improvisar el encuadre por su cuenta — y vas a recibir respuestas correctas pero mal calibradas.</p>
+
+<h2>Descomposición del prompt del visualizador</h2>
+
+<div class="craft-row">
+  <div class="craft-letter"><span class="big">C</span>Contexto</div>
+  <div class="craft-content">
+    <h3>El problema bioclimático y el sitio</h3>
+    <p>Un arquitecto trabaja en Lima (latitud −12.05°), clima de desierto costero subtropical que <em>sub-enfría</em> seis meses al año y rara vez recalienta. Necesita decidir las proporciones de los vanos de una fachada y si poner alero o parasoles. La decisión clásica de "sombra siempre buena" no aplica.</p>
+    <ul>
+      <li>Sitio con régimen climático específico (no genérico)</li>
+      <li>Decisión arquitectónica concreta (geometría del vano + protecciones)</li>
+      <li>Restricción real (lo que enseña la práctica del lugar)</li>
+    </ul>
+  </div>
+</div>
+
+<div class="craft-row">
+  <div class="craft-letter"><span class="big">R</span>Rol</div>
+  <div class="craft-content">
+    <h3>Quién es la IA mientras genera código</h3>
+    <p>Ingeniero de visualización paramétrica con criterio bioclimático. No es un programador puro ni un arquitecto puro: traduce decisiones de diseño en geometría calculable, y devuelve el cálculo en términos que el arquitecto pueda interpretar.</p>
+    <ul>
+      <li>Domina Three.js y matemática solar (Spencer/NOAA)</li>
+      <li>Conoce protecciones solares (alero, parasol vertical/horizontal, brise-soleil)</li>
+      <li>Sabe que la decisión final es humana — la herramienta evalúa, no prescribe</li>
+    </ul>
+  </div>
+</div>
+
+<div class="craft-row">
+  <div class="craft-letter"><span class="big">A</span>Acción</div>
+  <div class="craft-content">
+    <h3>Qué construye la IA</h3>
+    <p>Una aplicación web interactiva, en un solo archivo HTML, que:</p>
+    <ul>
+      <li>Modela un vano paramétrico en 3D (ancho, alto, alero, parasoles)</li>
+      <li>Calcula la posición solar en tiempo real para latitud/longitud/fecha/hora</li>
+      <li>Detecta sombras por <em>raycasting</em> real sobre puntos de muestreo del vidrio</li>
+      <li>Computa un balance anual por estación (sol invierno, sombra invierno, sol verano, sombra verano)</li>
+      <li>Permite cargar archivos <strong>.epw</strong> reales (EnergyPlus) para ponderar por radiación</li>
+      <li>Optimiza la geometría según tres estrategias: ganancia / equilibrio / reducción de excesos</li>
+      <li>Exporta la geometría en <strong>.obj</strong> para SketchUp, Rhino, Blender, 3ds Max o Maya</li>
+      <li>Devuelve una recomendación en lenguaje arquitectónico, no técnico</li>
+    </ul>
+  </div>
+</div>
+
+<div class="craft-row">
+  <div class="craft-letter"><span class="big">F</span>Formato</div>
+  <div class="craft-content">
+    <h3>El entregable técnico</h3>
+    <p>Aplicación HTML autocontenida con CSS y JavaScript inline. Three.js r128 vía CDN (cdnjs). UI dividida en escena 3D (izquierda) y panel de controles (derecha). Modelo solar Spencer/NOAA validado contra SunEarthTools (&lt;0.1° de error). Sistema Y-up, +X Este, −Z Norte, dimensiones en metros.</p>
+  </div>
+</div>
+
+<div class="craft-row">
+  <div class="craft-letter"><span class="big">T</span>Tono</div>
+  <div class="craft-content">
+    <h3>Cómo habla la herramienta</h3>
+    <p>Técnico-didáctico en español neutro. Etiquetas como "Sobreexpuesto / Moderado / Óptimo / Insuficiente" en lugar de "GOOD/BAD". Las recomendaciones explican <em>por qué</em>, no solo <em>qué</em> hacer. Sin emojis decorativos. Sin tono comercial. Lenguaje arquitectónico cuando es posible (vano, alero, parasol, fachada, no "ventana" ni "shade device").</p>
+  </div>
+</div>
+
+<div class="savedrule">
+  <strong>Regla guardada:</strong> Una herramienta bioclimática no decide por el arquitecto — le devuelve evidencia cuantificada para que decida. Si la app dice "este vano está bien", está mal diseñada. Debe decir "este vano recibe X horas de sol invernal y Y horas en verano, con esta orientación".
+</div>
+
+<div class="page-break"></div>
+
+<h2>Prompt completo (reverse engineering)</h2>
+
+<p>Este es el prompt que, dado al modelo, produce el Visualizador Solar de Vanos. Cópialo tal cual para reproducir la app, o úsalo como base para tu propia herramienta cambiando los campos del bloque siguiente.</p>
+
+<div class="promptbox"><span class="label">[C — CONTEXTO]</span>
+Soy arquitecto trabajando en un proyecto en Lima, Perú (latitud −12.05°, longitud −77.04°). El clima local es desierto costero subtropical (BWh): sub-enfría buena parte del año, humedad 80-85%, casi nunca recalienta. Estoy diseñando los vanos de una fachada y necesito una herramienta para evaluar incidencia solar y decidir protecciones (alero, parasoles).
+
+<span class="label">[R — ROL]</span>
+Actuarás como ingeniero de visualización paramétrica con criterio bioclimático. Dominas Three.js, cálculo de posición solar (modelo Spencer/NOAA), raycasting para detección de sombras y diseño de protecciones solares (alero horizontal, parasoles verticales). Sabes que una herramienta bioclimática no decide por el arquitecto: cuantifica para que el arquitecto decida.
+
+<span class="label">[A — ACCIÓN]</span>
+Genera una aplicación web interactiva, en un solo archivo HTML, que:
+
+1. Modele un vano paramétrico en 3D dentro de una habitación simple
+   - Parámetros editables: ancho (0.6-3.4m), alto (0.6-2.4m), centroide a 1.5m del piso
+   - Protecciones opcionales: alero horizontal (0.2-1.5m) y parasoles verticales (0.2-1.0m)
+
+2. Calcule la posición solar en tiempo real usando el modelo Spencer/NOAA
+   - Entradas: latitud, longitud, día del año, hora
+   - Validado contra SunEarthTools con menos de 0.1° de error
+
+3. Detecte sombras sobre el vano por raycasting real
+   - Malla 4×4 de puntos de muestreo sobre el vidrio
+   - Trazado de rayos hacia el sol con detección de oclusión por alero/parasoles
+   - Reporta fracción del vano en sombra
+
+4. Compute un balance anual por estación
+   - Itera día por medio, hora por hora, sobre el año entero
+   - Separa horas en sol-invierno / sombra-invierno / sol-verano / sombra-verano
+   - Detección de hemisferio automática; régimen tropical para latitudes con valor absoluto menor a 8°
+
+5. Permita cargar archivos .epw reales (EnergyPlus Weather)
+   - Parser que extrae Global Horizontal Radiation (columna 14)
+   - Pondera horas anuales por radiación medida en lugar de modelo sintético
+
+6. Incluya un optimizador con tres estrategias bioclimáticas seleccionables:
+   - "Ganancia": maximizar sol útil de invierno y área de luz (climas que sub-enfrían)
+   - "Equilibrio": cortar verano sin sacrificar invierno (climas mixtos)
+   - "Reducir excesos": priorizar sombra de verano (climas calurosos)
+   El optimizador hace un barrido paramétrico de ancho × alto × alero × parasoles y elige el óptimo según la estrategia.
+
+7. Exporte la geometría en formato .obj con nombres por pieza
+   - Compatible con SketchUp, Rhino, Blender, 3ds Max y Maya
+   - Incluye vértices, normales y caras indexadas
+   - Excluye elementos auxiliares (puntos de muestreo, helpers)
+
+8. Devuelva una recomendación en lenguaje arquitectónico
+   - Explica por qué del estado del vano (sobreexpuesto / moderado / óptimo / insuficiente)
+   - Sugiere intervenciones concretas (alero, parasol, reorientación)
+
+<span class="label">[F — FORMATO]</span>
+- Single-file HTML autocontenido
+- Three.js r128 vía cdnjs
+- UI dos columnas: escena 3D (izquierda) + panel de controles (derecha)
+- Tema oscuro (#0d1117 background, #00C896 accent teal, #c9712e accent naranja)
+- Sistema de coordenadas: Y-up, +X Este, −Z Norte, dimensiones en metros
+- Responsive para móviles (panel debajo, escena arriba)
+- Presets de localidades con perfiles climáticos distintos (Lima, Iquitos, Cusco, Arequipa)
+
+<span class="label">[T — TONO]</span>
+Técnico-didáctico en español neutro latinoamericano. Etiquetas evaluativas, no morales ("Sobreexpuesto", no "Mal"). Recomendaciones que explican por qué, no solo qué. Vocabulario arquitectónico (vano, alero, parasol, fachada). Sin emojis decorativos. Las advertencias técnicas van en el pie de la herramienta: "modelo didáctico, no sustituye simulación energética certificada".
+
+<span class="comment"># Resultado esperado: archivo HTML de aprox. 800-1100 líneas, autocontenido,
+# corriendo en cualquier navegador moderno sin dependencias locales.</span></div>
+
+<div class="page-break"></div>
+
+<h2>Plantilla para tus propias versiones</h2>
+
+<p>Copia el bloque siguiente y reemplaza cada <span style="background:#c9712e;color:#14323f;padding:1px 6px;border-radius:3px;font-weight:700">[CAMPO]</span> con tu propio problema bioclimático. La estructura CRAFT se mantiene; el contenido cambia.</p>
+
+<div class="promptbox"><span class="label">[C — CONTEXTO]</span>
+Soy arquitecto trabajando en un proyecto en <span class="blank">[SITIO: ciudad, latitud, longitud]</span>. El clima local es <span class="blank">[RÉGIMEN CLIMÁTICO: Köppen + descripción breve]</span>. Estoy diseñando <span class="blank">[ELEMENTO ARQUITECTÓNICO: patio, fachada, cubierta, ventilación cruzada]</span> y necesito una herramienta para evaluar <span class="blank">[VARIABLE A MEDIR: incidencia solar / ventilación / iluminación / confort térmico]</span> y decidir <span class="blank">[DECISIÓN DE DISEÑO: proporciones / protecciones / inercia / orientación]</span>.
+
+<span class="label">[R — ROL]</span>
+Actuarás como ingeniero de visualización paramétrica con criterio bioclimático. Dominas <span class="blank">[STACK TÉCNICO: Three.js / D3 / Canvas2D / WebGL]</span>, <span class="blank">[MÉTODO DE CÁLCULO: Spencer/NOAA / Givoni / Mahoney / Olgyay / psicrometría]</span>, y <span class="blank">[CONOCIMIENTO ESPECÍFICO: protecciones solares / inercia térmica / ventilación natural / iluminación natural]</span>. Sabes que una herramienta bioclimática no decide por el arquitecto: cuantifica para que el arquitecto decida.
+
+<span class="label">[A — ACCIÓN]</span>
+Genera una aplicación web interactiva, en un solo archivo HTML, que:
+
+1. Modele <span class="blank">[ELEMENTO]</span> de forma paramétrica
+   - Parámetros editables: <span class="blank">[LISTA DE PARÁMETROS CON RANGOS]</span>
+
+2. Calcule <span class="blank">[VARIABLE PRINCIPAL]</span> usando <span class="blank">[MODELO TEÓRICO]</span>
+   - Entradas: <span class="blank">[VARIABLES DE ENTRADA]</span>
+   - Validación: <span class="blank">[REFERENCIA DE VALIDACIÓN]</span>
+
+3. Visualice resultados en 3D / 2D
+   - <span class="blank">[QUÉ SE MUESTRA: malla, gradiente, vectores, curva]</span>
+
+4. Compute un balance / análisis agregado
+   - <span class="blank">[DIMENSIÓN TEMPORAL: anual / estacional / diario / horario]</span>
+   - <span class="blank">[MÉTRICAS REPORTADAS]</span>
+
+5. Permita cargar datos reales del sitio: <span class="blank">[FORMATO: .epw / .csv / .json]</span>
+
+6. Incluya un optimizador con <span class="blank">[N° DE ESTRATEGIAS]</span> estrategias seleccionables:
+   - <span class="blank">[ESTRATEGIA 1: nombre + objetivo]</span>
+   - <span class="blank">[ESTRATEGIA 2: nombre + objetivo]</span>
+   - <span class="blank">[ESTRATEGIA 3: nombre + objetivo]</span>
+
+7. Exporte resultados en <span class="blank">[FORMATOS: .obj / .gltf / .csv / .pdf]</span>
+
+8. Devuelva una recomendación en lenguaje arquitectónico que explique el porqué.
+
+<span class="label">[F — FORMATO]</span>
+- Single-file HTML autocontenido
+- <span class="blank">[LIBRERÍAS Y VERSIONES]</span> vía CDN
+- UI <span class="blank">[LAYOUT: 2 columnas / pestañas / single-pane]</span>
+- Tema <span class="blank">[claro / oscuro]</span> con paleta <span class="blank">[COLORES]</span>
+- Sistema de coordenadas: <span class="blank">[CONVENCIÓN]</span>
+- Responsive para móviles
+- Presets de localidades con perfiles distintos: <span class="blank">[LISTA DE PRESETS]</span>
+
+<span class="label">[T — TONO]</span>
+Técnico-didáctico en español neutro latinoamericano. Etiquetas evaluativas, no morales. Recomendaciones que explican por qué, no solo qué. Vocabulario arquitectónico. Sin emojis decorativos. Advertencia técnica en el pie: "modelo didáctico, no sustituye simulación certificada".</div>
+
+<h2>Variantes que puedes generar con esta plantilla</h2>
+
+<div class="variants">
+  <div class="variant-card">
+    <span class="var-title">Diagrama psicrométrico interactivo</span>
+    <span class="var-desc">Carta de Givoni con zonas de confort por estrategia (inercia, ventilación, evaporativo) sobre datos EPW.</span>
+  </div>
+  <div class="variant-card">
+    <span class="var-title">Simulador de ventilación cruzada</span>
+    <span class="var-desc">Flujo simplificado por dos vanos opuestos con presión de viento por orientación, fetch EPW de velocidad y dirección.</span>
+  </div>
+  <div class="variant-card">
+    <span class="var-title">Calculador de inercia térmica</span>
+    <span class="var-desc">Capacidad térmica de muros macizos vs livianos, retardo y amortiguamiento de la onda diurna.</span>
+  </div>
+  <div class="variant-card">
+    <span class="var-title">Optimizador de patios</span>
+    <span class="var-desc">Geometría de patio para máxima penetración solar invernal y sombra propia en verano por proporción.</span>
+  </div>
+  <div class="variant-card">
+    <span class="var-title">Iluminación natural por daylight factor</span>
+    <span class="var-desc">Niveles de iluminancia en plano de trabajo bajo cielo CIE estándar, sensibilidad al tamaño y posición del vano.</span>
+  </div>
+  <div class="variant-card">
+    <span class="var-title">Mapa de confort adaptativo</span>
+    <span class="var-desc">Banda de confort ASHRAE 55 adaptativo proyectada sobre temperatura horaria EPW, hora a hora del año.</span>
+  </div>
+</div>
+
+<div class="savedrule" style="margin-top:18px">
+  <strong>Recordatorio metodológico:</strong> El prompt no termina cuando la IA entrega el primer archivo. Itera: pide una versión, pruébala, identifica lo que falla o sobra, y vuelve con un prompt que apunte al problema. La calidad de la versión 4 va a ser muy distinta a la de la versión 1.
+</div>
+
+<h2>Encadenamiento sugerido</h2>
+
+<p>Si vas a generar una herramienta compleja, no pidas todo en un único prompt. Encadena:</p>
+
+<div class="chain">
+  <span class="chain-step">1. Modelo de cálculo</span>
+  <span class="chain-arrow">→</span>
+  <span class="chain-step">2. Visualización mínima</span>
+  <span class="chain-arrow">→</span>
+  <span class="chain-step">3. Controles paramétricos</span>
+  <span class="chain-arrow">→</span>
+  <span class="chain-step">4. Análisis agregado</span>
+  <span class="chain-arrow">→</span>
+  <span class="chain-step">5. Optimizador</span>
+  <span class="chain-arrow">→</span>
+  <span class="chain-step">6. Export</span>
+</div>
+
+<p>En cada paso verificas que lo anterior funcione. Si saltas al paso 5 directo, recibes una caja negra que no sabes si calcula bien.</p>
+
+<footer>
+  MALI · Módulo 3 · Herramientas Digitales para Proyectos Arquitectónicos<br>
+  Marco CRAFT · Plantilla para generación de herramientas bioclimáticas con IA
+</footer>
+
+</body>
+</html>

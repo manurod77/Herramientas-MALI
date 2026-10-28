@@ -9,6 +9,10 @@ Sitio estático: una portada y cuatro herramientas, todas en un solo archivo HTM
 | `visualizador-solar.html` | Visualizador solar de vanos en tres dimensiones |
 | `predimensionamiento-solar.html` | Paneles y terma solar, versión breve |
 | `calculadora-solar.html` | Paneles y terma solar, versión completa, hora por hora |
+| `generador-craft.html` | Generador de prompts CRAFT-PRO del Módulo 3 |
+| `plantilla-craft-herramientas.html` | El prompt con el que se construyó el visualizador, y su plantilla en blanco |
+| `manual-visualizador.html` | Manual de uso del visualizador solar |
+| `manual-sketchup.html` | Guía para conectar la IA con SketchUp |
 
 ## Publicarlo en Vercel desde esta carpeta
 

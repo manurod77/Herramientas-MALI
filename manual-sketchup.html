@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Manual · Conectar Claude con SketchUp</title>
+<style>
+  @page { size: A4; margin: 16mm 14mm; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'DejaVu Sans','Segoe UI',system-ui,sans-serif;
+       color:#1a2733;background:#f5f1ea;line-height:1.5;font-size:10.5pt;
+       max-width:800px;margin:0 auto;padding:24px 28px}
+
+  header.cover{margin-bottom:28px;padding:32px 0 24px;border-bottom:3px solid #2f7d83}
+  .kicker{font-size:9pt;letter-spacing:3px;color:#c9712e;font-weight:700;margin-bottom:10px;text-transform:uppercase}
+  h1{font-size:26pt;font-weight:800;color:#14323f;line-height:1.1;margin-bottom:8px;letter-spacing:-0.02em}
+  .subtitle{font-size:13pt;color:#2f7d83;font-weight:600;margin-bottom:14px}
+  .lead{font-size:11pt;color:#46545f;max-width:580px}
+
+  h2{font-size:15pt;color:#14323f;font-weight:700;margin:24px 0 12px;
+     padding:8px 14px;background:#2f7d83;color:#fff;border-radius:6px 6px 0 0}
+  h2 .num{color:#c9712e;font-weight:900;margin-right:8px}
+  h3{font-size:11.5pt;color:#2f7d83;font-weight:700;margin:16px 0 6px}
+  p{margin-bottom:8px}
+  ul,ol{padding-left:20px;margin-bottom:10px}
+  li{margin-bottom:4px}
+  strong{color:#14323f}
+  em{color:#c9712e;font-style:normal;font-weight:600}
+
+  .toc{background:#fff;border:1px solid #d8d0c2;border-radius:8px;padding:16px 20px;
+       margin:16px 0;font-size:10pt}
+  .toc h4{color:#2f7d83;margin-bottom:8px;text-transform:uppercase;letter-spacing:1.5px;font-size:9pt}
+  .toc ol{padding-left:18px}
+  .toc li{margin-bottom:3px;color:#46545f}
+
+  .card{background:#fff;border:1px solid #e2dccc;border-radius:8px;margin:14px 0;
+        page-break-inside:avoid;overflow:hidden}
+  .card-head{background:#14323f;color:#fff;padding:10px 16px;font-weight:700;font-size:10.5pt;
+             display:flex;justify-content:space-between;align-items:center}
+  .card-head .tag{background:#c9712e;color:#14323f;padding:2px 8px;border-radius:4px;
+                  font-size:8.5pt;letter-spacing:1px;text-transform:uppercase;font-weight:800}
+  .card-body{padding:14px 18px;font-size:10pt}
+  .card-body p:last-child{margin-bottom:0}
+
+  .savedrule{background:#fff7ed;border:1px solid #f5d8b8;border-left:4px solid #c9712e;
+             padding:12px 16px;margin:14px 0;border-radius:0 6px 6px 0;font-size:10pt;page-break-inside:avoid}
+  .savedrule strong{color:#c9712e}
+
+  .control-tbl{width:100%;border-collapse:collapse;font-size:9.5pt;margin:10px 0;
+               background:#fff;border-radius:6px;overflow:hidden}
+  .control-tbl th{background:#14323f;color:#fff;padding:7px 10px;text-align:left;font-weight:700}
+  .control-tbl td{padding:7px 10px;border-top:1px solid #e2dccc;vertical-align:top}
+  .control-tbl td:first-child{font-weight:700;color:#2f7d83;width:32%}
+  .control-tbl tr:nth-child(even) td{background:#faf6ec}
+
+  .workflow{counter-reset:step;margin:14px 0}
+  .step{counter-increment:step;background:#fff;border:1px solid #e2dccc;border-radius:8px;
+        padding:12px 14px 12px 50px;margin:8px 0;position:relative;font-size:10pt}
+  .step::before{content:counter(step);position:absolute;left:12px;top:12px;
+                width:28px;height:28px;background:#c9712e;color:#fff;border-radius:50%;
+                display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11pt}
+  .step strong{color:#2f7d83}
+  .step .sub{font-size:9pt;color:#6b7681;margin-top:4px}
+
+  .pill{background:#14323f;color:#fff;padding:1px 7px;border-radius:3px;font-size:9pt;font-weight:600}
+  .pill.orange{background:#c9712e}
+  .pill.teal{background:#2f7d83}
+  .pill.green{background:#3fb950;color:#06231c}
+  .pill.red{background:#e8533a}
+
+  /* FAQ accordion-style cards */
+  .faq{background:#fff;border:1px solid #e2dccc;border-radius:8px;margin:10px 0;padding:12px 16px;
+       page-break-inside:avoid}
+  .faq .q{font-weight:700;color:#14323f;font-size:10.5pt;margin-bottom:4px}
+  .faq .q::before{content:"P · ";color:#c9712e;font-weight:800}
+  .faq .a{color:#46545f;font-size:10pt}
+  .faq .a::before{content:"R · ";color:#2f7d83;font-weight:800}
+
+  /* Troubleshoot table */
+  .trouble{width:100%;border-collapse:collapse;font-size:9.5pt;margin:10px 0;background:#fff;border-radius:6px;overflow:hidden}
+  .trouble th{background:#e8533a;color:#fff;padding:7px 10px;text-align:left;font-weight:700}
+  .trouble td{padding:8px 10px;border-top:1px solid #e2dccc;vertical-align:top}
+  .trouble td:first-child{font-weight:700;color:#e8533a;width:34%}
+  .trouble tr:nth-child(even) td{background:#faf6ec}
+
+  /* Prompt example box */
+  .promptbox{background:#14323f;color:#e6edf3;padding:14px 18px;border-radius:8px;
+             font-family:'DejaVu Sans Mono','Courier New',monospace;font-size:9.5pt;line-height:1.6;
+             white-space:pre-wrap;border-left:4px solid #c9712e;page-break-inside:avoid;margin:12px 0}
+  .promptbox .label{color:#c9712e;font-weight:700}
+
+  .compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
+  .compare-card{background:#fff;border:1px solid #e2dccc;border-radius:8px;padding:12px 14px;font-size:9.5pt}
+  .compare-card.good{border-left:4px solid #3fb950}
+  .compare-card.bad{border-left:4px solid #e8533a}
+  .compare-card .ctitle{font-weight:800;margin-bottom:6px;font-size:10pt}
+  .compare-card.good .ctitle{color:#3fb950}
+  .compare-card.bad .ctitle{color:#e8533a}
+
+  .page-break{page-break-before:always}
+
+  footer{margin-top:36px;padding-top:14px;border-top:1px solid #d8d0c2;
+         font-size:8.5pt;color:#6b7681;text-align:center}
+
+  @media print{ body{background:#fff;padding:0} }
+</style>
+</head>
+<body>
+
+<header class="cover">
+  <div class="kicker">MALI · M3/M4 · MANUAL TÉCNICO</div>
+  <h1>Conectar Claude<br>con SketchUp</h1>
+  <div class="subtitle">SketchUp Connector for Claude — guía de instalación, uso y resolución de problemas</div>
+  <p class="lead">Paso a paso para habilitar el conector oficial de Trimble, entender sus límites de uso gratuito, escribir prompts que produzcan geometría arquitectónicamente coherente, y diagnosticar los problemas de conexión más frecuentes.</p>
+</header>
+
+<div class="toc">
+  <h4>Contenido</h4>
+  <ol>
+    <li>¿Necesito una suscripción paga? — la respuesta corta</li>
+    <li>Qué es el conector y qué no es</li>
+    <li>Requisitos previos</li>
+    <li>Instalación paso a paso</li>
+    <li>Tu primer modelo: flujo de prueba</li>
+    <li>Cómo escribir prompts que generan geometría coherente</li>
+    <li>Resolución de problemas frecuentes</li>
+    <li>Preguntas frecuentes</li>
+  </ol>
+</div>
+
+<!-- ============================================================ -->
+<h2><span class="num">01.</span>¿Necesito una suscripción paga? — la respuesta corta</h2>
+
+<div class="card">
+  <div class="card-head">Respuesta directa <span class="tag">TL;DR</span></div>
+  <div class="card-body">
+    <p><strong>No necesitás Claude Pro.</strong> El conector funciona con cualquier cuenta de Claude, incluida la gratuita.</p>
+    <p><strong>Sí hay un límite del lado de SketchUp:</strong> con una cuenta Trimble gratuita podés generar hasta <strong>30 modelos .skp</strong>. Pasado ese número, Trimble pide una suscripción de pago de SketchUp (por ejemplo SketchUp Go, USD 19.99/mes) para seguir generando archivos.</p>
+    <p>El límite es de volumen de archivos guardados en Trimble, no de nivel de cuenta en Claude.</p>
+  </div>
+</div>
+
+<table class="control-tbl">
+  <thead><tr><th>Necesitás</th><th>Nivel mínimo</th></tr></thead>
+  <tbody>
+    <tr><td>Cuenta de Claude</td><td>Gratuita — funciona igual con Free, Pro o Max.</td></tr>
+    <tr><td>Trimble ID</td><td>Gratuita — es solo registro de identidad, no licencia de SketchUp.</td></tr>
+    <tr><td>Suscripción SketchUp</td><td>No requerida hasta el modelo #31 del mes. Con suscripción paga (ej. SketchUp Go), sin límite reportado.</td></tr>
+  </tbody>
+</table>
+
+<div class="savedrule">
+  <strong>Para tus alumnos de M3/M4:</strong> pueden empezar a experimentar sin gastar nada — ni en Claude ni en SketchUp — y solo necesitarán evaluar una suscripción si superan los 30 modelos guardados en un mes, algo improbable durante el curso salvo que generen muchísimas iteraciones.
+</div>
+
+<!-- ============================================================ -->
+<h2><span class="num">02.</span>Qué es el conector y qué no es</h2>
+
+<p>El <strong>SketchUp Connector for Claude</strong> es un conector oficial construido por Trimble, parte del programa <em>Claude for Creative Work</em> de Anthropic (lanzado junto con conectores para Blender, Adobe, Autodesk Fusion y otros). Es distinto de servidores MCP comunitarios no oficiales que circulan para SketchUp — este lo mantiene y respalda Trimble directamente.</p>
+
+<table class="control-tbl">
+  <thead><tr><th>Sí hace</th><th>Detalle</th></tr></thead>
+  <tbody>
+    <tr><td>Crear modelos nuevos</td><td>Geometría con formas básicas y superficies curvas, organizada en grupos y componentes.</td></tr>
+    <tr><td>Interpretar referencias</td><td>Sketches, fotos, planos y dimensiones que subas como contexto del prompt.</td></tr>
+    <tr><td>Iterar dentro de un chat</td><td>Cada ajuste genera una nueva versión rastreable; podés pegar capturas de SketchUp señalando qué corregir.</td></tr>
+    <tr><td>Entregar archivo descargable</td><td>.skp nativo, compatible con SketchUp Web, Desktop, iPad e iPhone.</td></tr>
+  </tbody>
+</table>
+
+<table class="trouble">
+  <thead><tr><th>No hace</th><th>Detalle</th></tr></thead>
+  <tbody>
+    <tr><td>Editar un .skp existente</td><td>Solo crea archivos nuevos desde cero — no puede abrir y modificar un modelo que ya tengas.</td></tr>
+    <tr><td>Renderizar</td><td>Genera geometría, no imágenes renderizadas. Para eso seguís usando tus herramientas habituales (V-Ray, motor de SketchUp, etc.).</td></tr>
+    <tr><td>Mantener memoria entre chats</td><td>Cada hilo nuevo empieza sin conocimiento de proyectos previos — el historial de versiones vive dentro de un mismo chat, no entre chats distintos.</td></tr>
+    <tr><td>Garantizar precisión arquitectónica</td><td>Sin dimensiones e imágenes de referencia precisas, puede producir plantas con errores funcionales (puertas faltantes, circulaciones absurdas). Ver sección 6.</td></tr>
+  </tbody>
+</table>
+
+<!-- ============================================================ -->
+<h2><span class="num">03.</span>Requisitos previos</h2>
+
+<div class="workflow">
+  <div class="step"><strong>Cuenta de Claude.</strong> Cualquier plan sirve. Si no tenés una, creala en claude.ai.</div>
+  <div class="step"><strong>Trimble ID.</strong> Es el sistema de identidad de Trimble (la empresa dueña de SketchUp), separado de tu licencia de SketchUp. Si ya usás SketchUp con tu cuenta habitual, probablemente ya tengas uno.
+    <div class="sub">Si no, lo creás gratis durante el mismo proceso de conexión (paso 2 de la instalación).</div>
+  </div>
+  <div class="step"><strong>Navegador actualizado.</strong> El proceso de autorización se hace por OAuth en el navegador — no necesitás tener SketchUp Desktop abierto ni instalado para generar el primer modelo.</div>
+</div>
+
+<!-- ============================================================ -->
+<div class="page-break"></div>
+<h2><span class="num">04.</span>Instalación paso a paso</h2>
+
+<div class="workflow">
+  <div class="step"><strong>Abrí Claude.</strong> En claude.ai (web o app), andá al menú lateral izquierdo.</div>
+  <div class="step"><strong>Entrá a Configuración → Conectores.</strong> Buscá la opción "Customize" o "Personalizar" en el panel lateral, y dentro de ahí, "Connectors" / "Conectores".</div>
+  <div class="step"><strong>Seleccioná "Conectar tus apps".</strong> Esto abre el directorio de conectores disponibles de Claude.</div>
+  <div class="step"><strong>Buscá "SketchUp".</strong> Escribí "SketchUp" en el buscador del directorio y hacé clic en "Add" / "Agregar".</div>
+  <div class="step"><strong>Hacé clic en "Connect".</strong> En la pantalla de detalles del conector, vas a ver el botón de conexión.</div>
+  <div class="step"><strong>Autorizá con tu Trimble ID.</strong> Te va a pedir iniciar sesión con Trimble ID (o crearlo si no tenés uno) y autorizar el acceso de Claude a tu cuenta de SketchUp.
+    <div class="sub">Esta autorización es lo que habilita a Claude a guardar archivos en tu cuenta de Trimble — sin ella, no puede generar .skp.</div>
+  </div>
+  <div class="step"><strong>Confirmá la conexión.</strong> Una vez autorizado, volvés a Claude y el conector va a aparecer como activo en tu lista de conectores.</div>
+</div>
+
+<div class="savedrule">
+  <strong>No necesitás abrir SketchUp Desktop para este proceso.</strong> Todo el flujo de instalación ocurre en el navegador, entre Claude y la cuenta Trimble. SketchUp Desktop solo lo vas a necesitar para abrir el .skp ya generado, si querés editarlo manualmente.
+</div>
+
+<!-- ============================================================ -->
+<h2><span class="num">05.</span>Tu primer modelo: flujo de prueba</h2>
+
+<p>Antes de meter geometría compleja de un proyecto real, hacé una prueba simple para confirmar que la conexión funciona de punta a punta.</p>
+
+<div class="promptbox"><span class="label">[PROMPT DE PRUEBA]</span>
+Crea en SketchUp una habitación simple de 4×3 metros con un vano de ventana de 1.5×1.2 m en el muro norte, a 0.9 m del piso. Agrega una puerta de 0.9×2.1 m en el muro sur.</div>
+
+<div class="workflow">
+  <div class="step"><strong>Pegá el prompt en un chat nuevo de Claude.</strong> Claude va a reconocer que tiene el conector de SketchUp disponible y empezar a construir la geometría.</div>
+  <div class="step"><strong>Esperá la confirmación.</strong> Claude trabaja en una sesión de SketchUp en la nube, verificando dimensiones paso a paso — vas a ver mensajes intermedios mientras arma componentes.</div>
+  <div class="step"><strong>Revisá la miniatura.</strong> Al terminar, Claude genera una vista previa 2D del modelo dentro del chat.</div>
+  <div class="step"><strong>Descargá el .skp.</strong> Vas a tener un enlace de descarga directa. Abrilo en SketchUp (Web, Desktop, iPad o celular) para confirmar que la geometría es correcta.</div>
+  <div class="step"><strong>Iterá si hace falta.</strong> Si algo no está bien, describilo en el mismo chat ("la ventana debería estar centrada en el muro") o pegá una captura de SketchUp señalando el problema. Claude genera una nueva versión, y el chat mantiene el historial de versiones.</div>
+</div>
+
+<!-- ============================================================ -->
+<div class="page-break"></div>
+<h2><span class="num">06.</span>Cómo escribir prompts que generan geometría coherente</h2>
+
+<p>El conector tiene un problema documentado: sin información suficiente, puede generar plantas arquitectónicamente absurdas — departamentos sin puertas entre ambientes, islas de cocina mal ubicadas. No es un bug aislado: es consecuencia directa de prompts vagos. La calidad del resultado depende de cuánta información estructural le das.</p>
+
+<div class="compare-grid">
+  <div class="compare-card bad">
+    <div class="ctitle">✕ Prompt insuficiente</div>
+    <p>"Crea un departamento de un dormitorio."</p>
+    <p style="margin-top:8px;color:#6b7681;font-size:9pt">Claude no tiene dimensiones, no sabe dónde van las circulaciones, y va a "alucinar" una distribución plausible pero potencialmente disfuncional.</p>
+  </div>
+  <div class="compare-card good">
+    <div class="ctitle">✓ Prompt con contexto suficiente</div>
+    <p>Dimensiones exactas + planta de referencia (imagen) + descripción de circulaciones y vanos.</p>
+    <p style="margin-top:8px;color:#6b7681;font-size:9pt">Combinando imágenes de referencia con dimensiones detalladas se obtienen resultados sustancialmente mejores, incluso para combinaciones completas de ambientes.</p>
+  </div>
+</div>
+
+<h3>6.1 Qué incluir siempre</h3>
+<table class="control-tbl">
+  <tbody>
+    <tr><td>Dimensiones</td><td>Ancho, largo, alto de cada ambiente. No dejes que Claude "adivine" proporciones — cuanta más precisión, menos margen de error.</td></tr>
+    <tr><td>Referencias visuales</td><td>Sube sketches, fotos de plantas similares, o planos escaneados. Funcionan como anclaje del lenguaje del prompt.</td></tr>
+    <tr><td>Vanos explícitos</td><td>Especifica dónde van puertas y ventanas, en qué muro, a qué altura y con qué dimensión — el conector no infiere circulaciones automáticamente.</td></tr>
+    <tr><td>Forma y proporción, no solo función</td><td>El conector modela geometría: prompts que enfatizan forma y proporción (no solo "una cocina") dan mejores resultados.</td></tr>
+    <tr><td>Ideas parciales primero</td><td>Si tu idea no está cerrada, describila y trabajala con Claude en conversación antes de pedir el modelo — el conector está pensado para ese proceso iterativo.</td></tr>
+  </tbody>
+</table>
+
+<div class="promptbox"><span class="label">[PROMPT MEJORADO — mismo caso que arriba]</span>
+Crea en SketchUp un departamento de un dormitorio de 45 m² total, con esta distribución:
+- Living-comedor: 4.0 × 3.5 m, conectado directamente a la cocina sin puerta (concepto abierto)
+- Cocina: 2.5 × 2.0 m, con isla de 1.2 × 0.6 m centrada, dejando 0.9 m de paso libre alrededor
+- Dormitorio: 3.5 × 3.0 m, con puerta de 0.8 × 2.1 m hacia el pasillo
+- Baño: 2.0 × 1.8 m, con puerta de 0.7 × 2.0 m hacia el pasillo, accesible desde el dormitorio
+- Pasillo de circulación: 1.0 m de ancho, conectando dormitorio, baño y living
+Altura de piso a techo: 2.6 m en todos los ambientes.
+Adjunto una planta de referencia con la distribución general.</div>
+
+<h3>6.2 Trabajo iterativo: el conector está pensado para esto</h3>
+<p>No esperes el modelo perfecto en el primer intento. El flujo recomendado por Trimble es conversacional: describís, generás, revisás, corregís. Cada corrección genera una nueva versión dentro del mismo chat, con historial navegable.</p>
+
+<div class="promptbox"><span class="label">[CORRECCIÓN — pegando una captura de SketchUp]</span>
+[captura adjunta del modelo actual]
+La puerta del baño está bloqueando el paso hacia el dormitorio. Muévela 0.4 m hacia la derecha para que no invada la circulación. Mantené todo lo demás igual.</div>
+
+<div class="savedrule">
+  <strong>Importante:</strong> Claude solo puede crear archivos .skp nuevos — no editar uno existente que ya tengas guardado fuera del chat. El historial de versiones funciona <em>dentro de una misma conversación</em>; si abrís un chat nuevo, Claude empieza sin memoria del proyecto anterior. Si necesitás continuar trabajando un modelo en otra sesión, llevá contexto: dimensiones, decisiones tomadas, y si es posible una captura del estado actual.
+</div>
+
+<!-- ============================================================ -->
+<h2><span class="num">07.</span>Resolución de problemas frecuentes</h2>
+
+<table class="trouble">
+  <thead><tr><th>Problema</th><th>Causa probable / solución</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>No aparece "SketchUp" en el directorio de conectores</td>
+      <td>Verificá que estés en la sección correcta (Customize → Connectors → Conectar tus apps), no en configuración general. Si seguís sin verlo, puede ser un problema de disponibilidad regional o de versión de la interfaz — probá refrescar la página o cerrar sesión y volver a entrar.</td>
+    </tr>
+    <tr>
+      <td>La autorización con Trimble ID falla o queda en loop</td>
+      <td>Cerrá sesión de Trimble en el navegador y volvé a intentar. Si tenés más de una cuenta de Trimble (por ejemplo una personal y una institucional de MALI), verificá que estés autorizando con la que querés usar.</td>
+    </tr>
+    <tr>
+      <td>Claude dice que no puede generar el modelo</td>
+      <td>Confirmá que el conector siga activo en tu lista de conectores (a veces los tokens de autorización expiran). Reconectá desde el directorio si hace falta.</td>
+    </tr>
+    <tr>
+      <td>Llegaste a 30 modelos y no podés generar más</td>
+      <td>Es el límite de la cuenta SketchUp gratuita. Las opciones son esperar al siguiente período (si el conteo es mensual), o evaluar una suscripción de pago como SketchUp Go.</td>
+    </tr>
+    <tr>
+      <td>El modelo generado tiene errores funcionales (sin puertas, circulaciones imposibles)</td>
+      <td>No es un error de conexión — es un problema de prompt insuficiente. Volvé a la sección 6: agregá dimensiones exactas, vanos explícitos y, si es posible, una imagen de referencia.</td>
+    </tr>
+    <tr>
+      <td>El .skp descargado no abre o se ve corrupto</td>
+      <td>Confirmá que estés abriendo con una versión de SketchUp compatible (Web, Desktop, iPad o iPhone — todas deberían poder abrirlo). Si persiste, pedile a Claude que regenere el modelo: a veces una iteración intermedia queda en estado inconsistente.</td>
+    </tr>
+    <tr>
+      <td>Necesito editar un modelo que ya tenía antes de usar el conector</td>
+      <td>No es posible — el conector solo crea archivos nuevos. Tenés que describirle a Claude el modelo existente (con capturas y dimensiones) para que lo recree desde cero, o seguir editándolo manualmente en SketchUp.</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ============================================================ -->
+<h2><span class="num">08.</span>Preguntas frecuentes</h2>
+
+<div class="faq">
+  <div class="q">¿Puedo usar el conector con SketchUp Free (la versión web gratuita de SketchUp)?</div>
+  <div class="a">Sí, el conector no depende de qué versión de SketchUp uses para abrir el archivo final — usa una sesión en la nube propia para construir la geometría. El límite de 30 modelos es de la cuenta Trimble, no de qué cliente de SketchUp tengas instalado.</div>
+</div>
+
+<div class="faq">
+  <div class="q">¿Mis alumnos pueden compartir una sola cuenta Trimble para la clase?</div>
+  <div class="a">No es recomendable: el límite de 30 modelos se acumula sobre la cuenta, así que se agotaría rápido entre todo el grupo. Cada alumno debería crear su propio Trimble ID gratuito — toma menos de dos minutos.</div>
+</div>
+
+<div class="faq">
+  <div class="q">¿El conector reemplaza el modelado manual en SketchUp?</div>
+  <div class="a">No. Genera un punto de partida — geometría base que después se refina, ajusta y detalla manualmente en SketchUp. Pensalo como un boceto 3D rápido, no como el modelo final de producción.</div>
+</div>
+
+<div class="faq">
+  <div class="q">¿Qué tan confiable es para plantas arquitectónicas complejas?</div>
+  <div class="a">Funciona mejor para massing, volumetría general y piezas simples (mobiliario, formas) que para distribuciones interiores complejas con muchos ambientes interconectados. Cuanto más detallada la distribución funcional que pedís, más riesgo de errores de circulación si no das dimensiones y referencias precisas.</div>
+</div>
+
+<div class="faq">
+  <div class="q">¿Puedo usarlo para el ejercicio de masa volumétrica de la sesión de Barranco?</div>
+  <div class="a">Sí — es exactamente el tipo de uso para el que mejor funciona: massing general, terrazas escalonadas, proporciones de volúmenes. Para el detalle fino (vanos, brise-soleil, materialidad) seguí trabajando manualmente sobre la base generada.</div>
+</div>
+
+<div class="faq">
+  <div class="q">¿Necesito tener SketchUp instalado en mi computadora?</div>
+  <div class="a">No para generar el modelo — todo el proceso de creación ocurre en una sesión en la nube. Sí vas a necesitar algún cliente de SketchUp (Web, Desktop, iPad o iPhone) para abrir y editar el .skp descargado.</div>
+</div>
+
+<footer>
+  MALI · Módulo 3 / Módulo 4 · Herramientas Digitales para Proyectos Arquitectónicos<br>
+  Manual técnico · Conector oficial SketchUp ↔ Claude (Trimble × Anthropic)
+</footer>
+
+</body>
+</html>

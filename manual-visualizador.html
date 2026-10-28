@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Manual Didáctico · Visualizador Solar de Vanos</title>
+<style>
+  @page { size: A4; margin: 16mm 14mm; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'DejaVu Sans','Segoe UI',system-ui,sans-serif;
+       color:#1a2733;background:#f5f1ea;line-height:1.5;font-size:10.5pt;
+       max-width:800px;margin:0 auto;padding:24px 28px}
+
+  header.cover{margin-bottom:28px;padding:32px 0 24px;border-bottom:3px solid #2f7d83}
+  .kicker{font-size:9pt;letter-spacing:3px;color:#c9712e;font-weight:700;margin-bottom:10px;text-transform:uppercase}
+  h1{font-size:28pt;font-weight:800;color:#14323f;line-height:1.05;margin-bottom:8px;letter-spacing:-0.02em}
+  .subtitle{font-size:13pt;color:#2f7d83;font-weight:600;margin-bottom:14px}
+  .lead{font-size:11pt;color:#46545f;max-width:580px}
+
+  h2{font-size:15pt;color:#14323f;font-weight:700;margin:24px 0 12px;
+     padding:8px 14px;background:#2f7d83;color:#fff;border-radius:6px 6px 0 0}
+  h2 .num{color:#c9712e;font-weight:900;margin-right:8px}
+  h3{font-size:11.5pt;color:#2f7d83;font-weight:700;margin:16px 0 6px}
+  h4{font-size:10.5pt;color:#14323f;font-weight:700;margin:10px 0 4px}
+  p{margin-bottom:8px}
+  ul,ol{padding-left:20px;margin-bottom:10px}
+  li{margin-bottom:4px}
+  strong{color:#14323f}
+  em{color:#c9712e;font-style:normal;font-weight:600}
+
+  .toc{background:#fff;border:1px solid #d8d0c2;border-radius:8px;padding:16px 20px;
+       margin:16px 0;font-size:10pt}
+  .toc h4{color:#2f7d83;margin-bottom:8px;text-transform:uppercase;letter-spacing:1.5px;font-size:9pt}
+  .toc ol{padding-left:18px}
+  .toc li{margin-bottom:3px;color:#46545f}
+
+  /* Card with dark header — for key concepts */
+  .card{background:#fff;border:1px solid #e2dccc;border-radius:8px;margin:14px 0;
+        page-break-inside:avoid;overflow:hidden}
+  .card-head{background:#14323f;color:#fff;padding:10px 16px;font-weight:700;font-size:10.5pt;
+             display:flex;justify-content:space-between;align-items:center}
+  .card-head .tag{background:#c9712e;color:#14323f;padding:2px 8px;border-radius:4px;
+                  font-size:8.5pt;letter-spacing:1px;text-transform:uppercase;font-weight:800}
+  .card-body{padding:14px 18px;font-size:10pt}
+  .card-body p:last-child{margin-bottom:0}
+
+  /* Saved rule callout */
+  .savedrule{background:#fff7ed;border:1px solid #f5d8b8;border-left:4px solid #c9712e;
+             padding:12px 16px;margin:14px 0;border-radius:0 6px 6px 0;font-size:10pt;page-break-inside:avoid}
+  .savedrule strong{color:#c9712e}
+
+  /* Control reference table */
+  .control-tbl{width:100%;border-collapse:collapse;font-size:9.5pt;margin:10px 0;
+               background:#fff;border-radius:6px;overflow:hidden}
+  .control-tbl th{background:#14323f;color:#fff;padding:7px 10px;text-align:left;font-weight:700}
+  .control-tbl td{padding:7px 10px;border-top:1px solid #e2dccc;vertical-align:top}
+  .control-tbl td:first-child{font-weight:700;color:#2f7d83;width:30%}
+  .control-tbl tr:nth-child(even) td{background:#faf6ec}
+
+  /* Strategy comparison grid */
+  .strat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}
+  .strat{background:#fff;border:1px solid #e2dccc;border-radius:8px;padding:14px;font-size:9.5pt}
+  .strat-head{font-weight:800;font-size:11pt;margin-bottom:6px;padding-bottom:6px;border-bottom:2px solid #c9712e}
+  .strat.gain .strat-head{color:#f5a623}
+  .strat.balance .strat-head{color:#3fb950}
+  .strat.reduce .strat-head{color:#3a86d8}
+  .strat .when{font-size:9pt;color:#6b7681;font-style:italic;margin-bottom:8px}
+  .strat ul{font-size:9.5pt;padding-left:16px}
+
+  /* Case study */
+  .case{background:#fff;border:1px solid #e2dccc;border-radius:8px;margin:12px 0;
+        padding:14px 18px;page-break-inside:avoid}
+  .case-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+  .case-name{font-size:13pt;font-weight:800;color:#14323f}
+  .case-coords{font-size:9pt;color:#6b7681;font-family:'DejaVu Sans Mono',monospace}
+  .case-zone{display:inline-block;background:#2f7d83;color:#fff;padding:2px 8px;border-radius:4px;
+             font-size:8.5pt;font-weight:600;margin-bottom:8px}
+  .case-results{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px;font-size:9pt}
+  .case-result{background:#faf6ec;border-radius:5px;padding:8px 10px}
+  .case-result .res-strat{font-weight:700;color:#c9712e;font-size:9pt;margin-bottom:4px;text-transform:uppercase;letter-spacing:1px}
+  .case-result .res-geom{color:#14323f;font-weight:600;font-size:9.5pt}
+  .case-result .res-prot{color:#46545f;font-size:9pt;margin-top:2px}
+
+  /* Decision tree */
+  .decision{background:#14323f;color:#e6edf3;border-radius:8px;padding:18px 22px;margin:14px 0;
+            font-size:10pt;page-break-inside:avoid}
+  .decision h4{color:#c9712e;margin-bottom:10px;font-size:10pt;letter-spacing:1px;text-transform:uppercase}
+  .decision .q{font-weight:700;color:#fff;margin-bottom:4px}
+  .decision .branch{margin-left:18px;border-left:2px solid #c9712e;padding-left:14px;margin-bottom:10px}
+  .decision em{color:#c9712e}
+
+  /* Diagram captions */
+  .diagram{background:#fff;border:1px solid #d8d0c2;border-radius:8px;padding:14px;margin:12px 0;
+           text-align:center;page-break-inside:avoid}
+  .diagram svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  .diagram-caption{margin-top:10px;font-size:9pt;color:#6b7681;font-style:italic}
+
+  /* Equation box */
+  .eq{background:#14323f;color:#e6edf3;border-radius:6px;padding:10px 16px;margin:10px 0;
+      font-family:'DejaVu Sans Mono','Courier New',monospace;font-size:10pt;text-align:center;
+      page-break-inside:avoid}
+  .eq .label{color:#c9712e;font-weight:700;font-style:italic}
+
+  /* Workflow steps */
+  .workflow{counter-reset:step;margin:14px 0}
+  .step{counter-increment:step;background:#fff;border:1px solid #e2dccc;border-radius:8px;
+        padding:12px 14px 12px 50px;margin:8px 0;position:relative;font-size:10pt}
+  .step::before{content:counter(step);position:absolute;left:12px;top:12px;
+                width:28px;height:28px;background:#c9712e;color:#fff;border-radius:50%;
+                display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11pt}
+  .step strong{color:#2f7d83}
+
+  /* Exercises */
+  .exercise{background:#fff;border-left:4px solid #2f7d83;padding:12px 16px;margin:10px 0;
+            border-radius:0 6px 6px 0;font-size:10pt;page-break-inside:avoid}
+  .ex-num{color:#c9712e;font-weight:800;font-size:10pt;margin-right:8px}
+  .ex-title{font-weight:700;color:#14323f}
+  .ex-body{margin-top:6px;color:#46545f}
+  .ex-deliv{margin-top:6px;font-size:9pt;color:#6b7681}
+  .ex-deliv strong{color:#2f7d83;font-size:8.5pt;letter-spacing:1px;text-transform:uppercase}
+
+  /* Glossary */
+  .glossary{font-size:10pt}
+  .glossary dt{font-weight:700;color:#2f7d83;margin-top:8px}
+  .glossary dd{margin-left:0;color:#46545f;margin-top:2px}
+
+  /* Page break */
+  .page-break{page-break-before:always}
+  .no-break{page-break-inside:avoid}
+
+  /* Inline pill */
+  .pill{background:#14323f;color:#fff;padding:1px 7px;border-radius:3px;font-size:9pt;font-weight:600}
+  .pill.orange{background:#c9712e}
+  .pill.teal{background:#2f7d83}
+
+  /* Footer */
+  footer{margin-top:36px;padding-top:14px;border-top:1px solid #d8d0c2;
+         font-size:8.5pt;color:#6b7681;text-align:center}
+
+  @media print{ body{background:#fff;padding:0} }
+</style>
+</head>
+<body>
+
+<header class="cover">
+  <div class="kicker">MALI · M3 · S04 · MANUAL DIDÁCTICO</div>
+  <h1>Visualizador Solar<br>de Vanos</h1>
+  <div class="subtitle">Estrategia bioclimática y partido arquitectónico con IA</div>
+  <p class="lead">Manual de uso, lectura crítica de resultados y flujo de trabajo para llegar de la idea de fachada al partido bioclimático. Acompaña a la herramienta web y al prompt CRAFT que la genera.</p>
+</header>
+
+<div class="toc">
+  <h4>Contenido</h4>
+  <ol>
+    <li>Qué hace esta herramienta — y qué no</li>
+    <li>Anatomía: panel de control y escena 3D</li>
+    <li>Las tres estrategias bioclimáticas</li>
+    <li>Cómo leer el balance anual y las métricas instantáneas</li>
+    <li>Protecciones solares y la matemática del array equidistante</li>
+    <li>Flujo de trabajo: del sitio al partido</li>
+    <li>Cuatro casos de estudio (Lima, Iquitos, Cusco, Arequipa)</li>
+    <li>Exportación a SketchUp/Rhino/Blender</li>
+    <li>Ejercicios</li>
+    <li>Glosario bioclimático</li>
+  </ol>
+</div>
+
+<!-- ============================================================ -->
+<h2><span class="num">01.</span>Qué hace esta herramienta — y qué no</h2>
+
+<p>El visualizador resuelve un problema concreto: <em>cuantificar la incidencia solar real sobre un vano paramétrico</em> para una ubicación, fecha, hora, orientación y geometría dadas. Antes de tomar una decisión sobre proporciones, alero o protecciones, te muestra qué horas de sol entran, cuáles quedan cortadas, en qué estación, y bajo qué ángulo.</p>
+
+<div class="card">
+  <div class="card-head">¿Qué hace? <span class="tag">Capacidades</span></div>
+  <div class="card-body">
+    <ul>
+      <li>Calcula posición solar real (Spencer/NOAA) validada contra SunEarthTools con menos de 0.1° de error.</li>
+      <li>Detecta sombras sobre el vidrio por <strong>raycasting</strong> efectivo: cada punto del vano sabe si lo alcanza el sol o no.</li>
+      <li>Computa un <strong>balance anual</strong>: horas de sol y sombra separadas en periodo frío (el sol ayuda) y periodo cálido (el sol sobra). Con un EPW cargado, cada día se clasifica por su temperatura media; sin EPW se usa una ventana de calendario según el hemisferio y el régimen tropical (latitudes con valor absoluto menor a 8°).</li>
+      <li>Pondera por radiación real si cargas un <strong>EPW</strong> de EnergyPlus.</li>
+      <li>Optimiza la geometría según tres <strong>estrategias bioclimáticas</strong> seleccionables.</li>
+      <li>Permite <strong>arrays equidistantes</strong> de lamas horizontales y parasoles verticales (2 a 6 elementos).</li>
+      <li>Exporta el modelo en <strong>.obj</strong> universal y el análisis en <strong>.json</strong>.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head">¿Qué NO hace? <span class="tag">Límites</span></div>
+  <div class="card-body">
+    <ul>
+      <li>No es una simulación energética certificada (no calcula carga térmica, ni transferencia, ni HVAC).</li>
+      <li>No considera obstrucciones del entorno (edificios vecinos, árboles, topografía).</li>
+      <li>No evalúa luz difusa ni reflejada del suelo o muros opuestos.</li>
+      <li>No reemplaza el criterio del arquitecto: <strong>devuelve evidencia cuantificada para decidir</strong>.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="savedrule">
+  <strong>Regla pedagógica:</strong> una herramienta bioclimática que decide por el arquitecto está mal diseñada. Esta herramienta te dice cuántas horas de sol entran o se cortan; tú decides si eso conviene para el proyecto.
+</div>
+
+<!-- ============================================================ -->
+<h2><span class="num">02.</span>Anatomía: panel de control y escena 3D</h2>
+
+<h3>2.1 La escena 3D (izquierda)</h3>
+<p>Un vano insertado en un muro de 4×3 m con habitación detrás. El piso muestra una cuadrícula con los cuatro puntos cardinales. El sol se mueve en tiempo real según la fecha y la hora elegidas. Sobre el vidrio aparecen 16 puntos de muestreo (4×4): <span class="pill orange">amarillos</span> si el sol los alcanza, <span class="pill">azulados</span> si están en sombra. El color del vidrio refleja el estado global del vano:</p>
+
+<ul>
+  <li><span class="pill" style="background:#e8533a">Sobreexpuesto</span> — la incidencia normalizada supera 0.62.</li>
+  <li><span class="pill" style="background:#f5a623">Moderado</span> — entre 0.32 y 0.62.</li>
+  <li><span class="pill" style="background:#3fb950">Óptimo</span> — entre 0.08 y 0.32.</li>
+  <li><span class="pill" style="background:#3a86d8">Insuficiente</span> — menos de 0.08 o sol bajo horizonte o fachada en sombra propia.</li>
+</ul>
+
+<p>Las pestañas superiores derechas (<strong>Instante</strong> / <strong>Mapa anual</strong>) cambian qué muestra la herramienta: en <em>Instante</em>, el estado del vano a la fecha y hora elegidas; en <em>Mapa anual</em>, un mapa de calor sobre el vidrio y un diagrama de trayectoria solar con la sombra de tu protección (ver sección 4.3).</p>
+
+<p>Para orientarte en 3D: arrastra con el cursor para orbitar; rueda del mouse para acercar.</p>
+
+<h3>2.2 El panel de controles (derecha)</h3>
+
+<table class="control-tbl">
+  <thead><tr><th>Sección</th><th>Función</th></tr></thead>
+  <tbody>
+    <tr><td>Ubicación</td><td>Latitud, longitud, cuatro presets de zonas climáticas peruanas con perfiles distintos (Lima, Iquitos, Cusco, Arequipa) y un menú con las 39 estaciones del Perú que tienen archivo climático, agrupadas por departamento. Al elegir una estación, la página toma su latitud y su longitud del encabezado del archivo climático y muestra su código, su altitud y su período.</td></tr>
+    <tr><td>Datos climáticos</td><td>Carga opcional de archivo .epw de EnergyPlus para ponderar horas por radiación medida.</td></tr>
+    <tr><td>Momento del año</td><td>Solsticio de junio (sol al norte en el hemisferio sur), equinoccio, solsticio de diciembre; más control horario por cuartos de hora.</td></tr>
+    <tr><td>Orientación fachada</td><td>0°=Norte, 90°=Este, 180°=Sur, 270°=Oeste. Pasos de 15°.</td></tr>
+    <tr><td>Geometría del vano</td><td>Ancho 0.6–3.4 m, alto 0.6–2.4 m. Centroide siempre a 1.5 m del piso.</td></tr>
+    <tr><td>Protección solar</td><td>Alero, array de lamas horizontales (0–6 elementos), array de parasoles verticales (0–6 elementos), con profundidades independientes.</td></tr>
+    <tr><td>Estrategia bioclimática</td><td>Ganancia / Equilibrio / Reducir excesos. Solo afecta al optimizador.</td></tr>
+    <tr><td>Optimizar</td><td>Hace un barrido de 312 candidatos (6×4 geometrías × 13 perfiles de protección) y elige el de mayor score según la estrategia.</td></tr>
+    <tr><td>Exportar</td><td>Modelo 3D en .obj o análisis en .json.</td></tr>
+  </tbody>
+</table>
+
+<!-- ============================================================ -->
+<h2><span class="num">03.</span>Las tres estrategias bioclimáticas</h2>
+
+<p>El selector de estrategia no cambia el cálculo solar — cambia <em>qué considera el optimizador como "buen vano"</em>. Es la decisión más importante que tomas, y debe estar alineada con el régimen climático del sitio.</p>
+
+<div class="strat-grid">
+  <div class="strat gain">
+    <div class="strat-head">Ganancia</div>
+    <div class="when">Para climas que sub-enfrían</div>
+    <ul>
+      <li>Maximiza área del vano (hasta 6.6 m²).</li>
+      <li>Privilegia el sol del periodo frío.</li>
+      <li>Penaliza cualquier protección que recorte sol.</li>
+      <li><strong>Resultado típico:</strong> vano grande sin protección.</li>
+    </ul>
+  </div>
+  <div class="strat balance">
+    <div class="strat-head">Equilibrio</div>
+    <div class="when">Para climas con dos regímenes</div>
+    <ul>
+      <li>Área moderada (hasta 4.0 m² antes de saturar).</li>
+      <li>Compara, en horas ponderadas por la exposición real de la fachada, el sol del periodo frío que se conserva contra el sol del periodo cálido que pasa.</li>
+      <li>Acepta protección solo si corta más sol cálido del que cuesta en sol frío.</li>
+      <li><strong>Resultado típico:</strong> depende de la fachada. En E/O la protección fija corta ambos periodos por igual y el resultado lo avisa; en Norte puede quedar sin protección si el sol de invierno pesa más que el de verano.</li>
+    </ul>
+  </div>
+  <div class="strat reduce">
+    <div class="strat-head">Reducir excesos</div>
+    <div class="when">Para climas calurosos</div>
+    <ul>
+      <li>Área saturada temprano (2.5 m²): no incentiva vanos enormes.</li>
+      <li>Privilegia cortar el sol del periodo cálido (65 % del puntaje).</li>
+      <li>Mantiene algo de sol del periodo frío si es posible (25 % del puntaje).</li>
+      <li><strong>Resultado típico:</strong> vano chico con protección densa.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="decision">
+  <h4>Cómo elegir tu estrategia</h4>
+  <div class="q">¿Tu sitio sub-enfría más horas de las que sobrecalienta al año?</div>
+  <div class="branch">
+    <strong>Sí</strong> (Lima, Cusco, gran parte de la sierra peruana, Tacna invernal) → <em>Ganancia</em>.<br>
+    Quieres todo el sol posible. Si dudas, parte por aquí y observa qué pasa en verano.
+  </div>
+  <div class="q">¿Tu sitio sobrecalienta varios meses al año y casi no necesita calefacción?</div>
+  <div class="branch">
+    <strong>Sí</strong> (Iquitos, Pucallpa, Piura, Tumbes, costa norte en verano) → <em>Reducir excesos</em>.<br>
+    Quieres bloquear sol directo. El optimizador te dará protección densa.
+  </div>
+  <div class="q">¿Tu sitio tiene oscilación fuerte: invierno frío + verano caluroso?</div>
+  <div class="branch">
+    <strong>Sí</strong> (Arequipa, ciertas zonas de Cajamarca, valles interandinos) → <em>Equilibrio</em>.<br>
+    Necesitas sol en invierno y sombra en verano. El optimizador te dará alero+parasoles dimensionados.
+  </div>
+</div>
+
+<div class="savedrule">
+  <strong>Pista crítica:</strong> el optimizador es un sweep paramétrico, no un oráculo. Te dice cuál es el mejor candidato dentro de un set discreto bajo una función de utilidad explícita. Si la estrategia está mal elegida, el resultado óptimo también lo está. <em>La estrategia es decisión tuya, no de la app.</em>
+</div>
+
+<!-- ============================================================ -->
+<h2><span class="num">04.</span>Cómo leer el balance anual y las métricas</h2>
+
+<h3>4.1 Las cuatro barras anuales</h3>
+
+<p>El panel <strong>Balance anual del vano</strong> recorre todo el año (día por medio, hora por hora), proyecta el sol contra el vano, descuenta lo que las protecciones bloquean (la sombra se evalúa en 3×3 puntos del vano, de modo que una hora puede contar como parcialmente sombreada), y suma horas en cuatro categorías:</p>
+
+<table class="control-tbl">
+  <tbody>
+    <tr><td>Sol · frío</td><td>Horas de sol directo que entran al vano durante meses fríos. <em>Para climas que sub-enfrían: cuanto más, mejor.</em></td></tr>
+    <tr><td>Sombra · frío</td><td>Horas en que el sol podría entrar pero una protección lo corta. <em>En climas que sub-enfrían es un costo: pierdes calefacción gratis.</em></td></tr>
+    <tr><td>Sol · calor</td><td>Horas de sol directo en meses cálidos. <em>En climas que sobrecalientan es carga térmica.</em></td></tr>
+    <tr><td>Sombra · calor</td><td>Horas en que la protección bloquea sol estival. <em>Para climas calurosos: cuanto más, mejor.</em></td></tr>
+  </tbody>
+</table>
+
+<p><strong>Cómo se definen los periodos.</strong> Con un EPW cargado, cada día es <em>frío</em> si su temperatura media es menor a 18 °C, <em>cálido</em> si es de 22 °C o más, y <em>neutro</em> entre ambos (esos umbrales son un supuesto de la herramienta, no una norma). Sin EPW se usa el calendario según el hemisferio; en latitudes tropicales (valor absoluto &lt;8°) se usa abril–agosto como periodo frío en el hemisferio sur. Sin EPW la herramienta no sabe si el sitio es realmente frío: en Iquitos, por ejemplo, conviene cargar el EPW o usar <em>Reducir excesos</em>.</p>
+
+<h3>4.2 Métricas instantáneas</h3>
+
+<p>Debajo del optimizador, cinco lecturas en tiempo real para la fecha y hora seleccionadas:</p>
+<ul>
+  <li><strong>Incidencia solar</strong> — ángulo entre el rayo y la normal a la fachada. 0° = perpendicular (máximo aprovechamiento). 90° = rasante.</li>
+  <li><strong>Altura solar</strong> — elevación del sol sobre el horizonte.</li>
+  <li><strong>Azimut solar</strong> — dirección del sol en planta, medida desde el norte.</li>
+  <li><strong>Punto en sombra</strong> — porcentaje del vano cubierto por sombra de protecciones, a partir del muestreo 4×4.</li>
+  <li><strong>Estado del vano</strong> — etiqueta evaluativa: sobreexpuesto / moderado / óptimo / insuficiente.</li>
+</ul>
+
+<h3>4.3 La pestaña Mapa anual</h3>
+
+<p>Al activar <strong>Mapa anual</strong> aparecen dos herramientas, ambas calculadas con tu protección actual:</p>
+<ul>
+  <li><strong>Mapa de calor del vano.</strong> El vidrio se divide en 16×12 celdas. Cada celda muestra el porcentaje de las horas con sol de frente al año (muestreo de un día cada seis) en que ese punto recibe sol directo, calculado con rayos 3D. La escala va de azul (0 %) a rojo (100 %). Sin protección el vano completo sale en rojo; con protección se ve qué zona queda a la sombra. El cálculo tarda unos segundos y se repite cada vez que cambias la fachada, el vano o las protecciones.</li>
+  <li><strong>Trayectoria solar con la sombra de la protección.</strong> Diagrama de altura solar contra azimut respecto a la perpendicular de la fachada (0° = de frente). Las curvas son la trayectoria del sol el 21 de diciembre, en los equinoccios y el 21 de junio, con puntos por hora local. La zona azul es la dirección del sol en que tu protección sombrea el vano: donde una curva cruza la zona azul, esas horas están protegidas. El círculo amarillo marca la fecha y hora elegidas.</li>
+</ul>
+<p>Ambos se leen junto con las cuatro barras anuales: las barras dan el total de horas; el mapa muestra dónde del vano; el diagrama, en qué horas y meses.</p>
+
+<!-- ============================================================ -->
+<div class="page-break"></div>
+<h2><span class="num">05.</span>Protecciones solares y la matemática del array</h2>
+
+<p>La app permite combinar tres familias de protección, todas independientes:</p>
+
+<h3>5.1 Alero superior (clásico)</h3>
+<p>Una losa horizontal sobre el dintel, proyectada hacia afuera. Bloquea sol cuando su ángulo de altura supera la pendiente trazada del centro del vano al borde del alero.</p>
+
+<div class="eq">
+  <span class="label">Alero bloquea cuando</span>&nbsp;&nbsp;tan(<em>perfil</em>) &gt; (altura_vano/2 + 0.06) / profundidad_alero
+</div>
+
+<p>Es la protección más efectiva contra sol alto (verano de mediodía en latitudes bajas). No bloquea sol bajo de la mañana o la tarde — para eso necesitas parasoles verticales.</p>
+
+<h3>5.2 Lamas horizontales (array equidistante)</h3>
+
+<p>Un brise-soleil horizontal: N lamas paralelas distribuidas en toda la altura del vano. Cada lama es como un mini-alero. <strong>Más lamas → menor espaciamiento → más horas de sombra</strong>.</p>
+
+<div class="diagram">
+  <svg viewBox="0 0 360 180" xmlns="http://www.w3.org/2000/svg">
+    <!-- Wall and window -->
+    <rect x="20" y="20" width="6" height="140" fill="#46545f"/>
+    <rect x="26" y="40" width="2" height="100" fill="#2f7d83" opacity="0.3"/>
+    <!-- Lamas (4 horizontal louvers) -->
+    <g stroke="#c9712e" stroke-width="2" fill="#c9712e">
+      <rect x="28" y="39" width="50" height="3"/>
+      <rect x="28" y="72" width="50" height="3"/>
+      <rect x="28" y="105" width="50" height="3"/>
+      <rect x="28" y="138" width="50" height="3"/>
+    </g>
+    <!-- Sun ray blocked -->
+    <line x1="200" y1="20" x2="78" y2="72" stroke="#f5a623" stroke-width="1.5" stroke-dasharray="3,3"/>
+    <line x1="78" y1="72" x2="50" y2="85" stroke="#46545f" stroke-width="1" stroke-dasharray="2,2"/>
+    <!-- Sun ray passing -->
+    <line x1="240" y1="100" x2="78" y2="135" stroke="#f5a623" stroke-width="1.5"/>
+    <line x1="78" y1="135" x2="28" y2="148" stroke="#f5a623" stroke-width="1.5"/>
+    <!-- Spacing arrow -->
+    <line x1="90" y1="105" x2="90" y2="138" stroke="#2f7d83" stroke-width="1"/>
+    <polygon points="87,108 93,108 90,103" fill="#2f7d83"/>
+    <polygon points="87,135 93,135 90,140" fill="#2f7d83"/>
+    <text x="96" y="125" font-size="9" fill="#2f7d83" font-family="DejaVu Sans">spacing = H/(N-1)</text>
+    <!-- Depth arrow -->
+    <line x1="28" y1="160" x2="78" y2="160" stroke="#2f7d83" stroke-width="1"/>
+    <polygon points="31,157 31,163 26,160" fill="#2f7d83"/>
+    <polygon points="75,157 75,163 80,160" fill="#2f7d83"/>
+    <text x="35" y="173" font-size="9" fill="#2f7d83" font-family="DejaVu Sans">depth</text>
+    <!-- Angle cutoff -->
+    <text x="200" y="60" font-size="9" fill="#c9712e" font-family="DejaVu Sans">rayo bloqueado</text>
+    <text x="200" y="93" font-size="9" fill="#3fb950" font-family="DejaVu Sans">rayo pasa</text>
+    <text x="250" y="135" font-size="9" fill="#46545f" font-family="DejaVu Sans" font-style="italic">θ</text>
+  </svg>
+  <div class="diagram-caption">Array de 4 lamas horizontales: el rayo bloqueado entra con ángulo &gt; cutoff; el que pasa, con ángulo menor.</div>
+</div>
+
+<div class="eq">
+  <span class="label">Un punto del vano queda en sombra cuando</span>&nbsp;&nbsp;(altura_lama − altura_punto) ≤ profundidad_lamas × tan(<em>perfil</em>), &nbsp;&nbsp;con la lama más cercana por encima del punto; spacing = altura_vano / (N − 1)
+</div>
+
+<p>Cada lama se trata como una placa horizontal de la profundidad elegida: el rayo que sale de un punto del vano hacia el sol sube con pendiente tan(<em>perfil</em>) y choca con la primera lama si la alcanza antes de salir de su profundidad. El balance anual evalúa esa condición en 3×3 puntos del vano. En una comparación contra el raycasting del modelo 3D (32 casos), la sombra anual coincidió en 1.6 puntos porcentuales de media y 9 como máximo.</p>
+
+<h3>5.3 Parasoles verticales (array equidistante)</h3>
+
+<p>Brise-soleil vertical: N aletas verticales distribuidas a lo ancho del vano. Bloquean sol que llega desde ángulos oblicuos (horarios bajos o fachadas mal orientadas). <strong>Más parasoles → mayor restricción al sol oblicuo</strong>.</p>
+
+<div class="eq">
+  <span class="label">Un punto del vano queda en sombra cuando</span>&nbsp;&nbsp;|x_aleta − x_punto| ≤ profundidad_parasol × tan(<em>off-axis</em>), &nbsp;&nbsp;con la aleta más cercana del lado del sol; spacing = ancho_vano / (N − 1)
+</div>
+
+<p>El ángulo <em>off-axis</em> es la diferencia entre el azimut solar y la normal a la fachada. Para sol perpendicular, off-axis = 0 y los parasoles no aportan. Útiles sobre todo en fachadas este/oeste, o cuando el sol está bajo.</p>
+
+<h3>5.4 Cuándo usar cada protección</h3>
+<table class="control-tbl">
+  <thead><tr><th>Protección</th><th>Bloquea sol</th><th>Mejor para</th></tr></thead>
+  <tbody>
+    <tr><td>Alero</td><td>Alto (cenital)</td><td>Verano de mediodía, latitudes bajas, fachada al ecuador.</td></tr>
+    <tr><td>Lamas horizontales</td><td>Medio-alto, gradual</td><td>Control fino en latitudes intermedias; permite tunear corte sin sacrificar todo el sol invernal.</td></tr>
+    <tr><td>Parasoles verticales</td><td>Oblicuo (lateral)</td><td>Fachadas este/oeste; sol de mañana o tarde; horarios bajos.</td></tr>
+    <tr><td>Combinación</td><td>Cenital + oblicuo</td><td>Brise-soleil cuadricular (4×4 lamas+parasoles) para climas que exigen sombra densa.</td></tr>
+  </tbody>
+</table>
+
+<!-- ============================================================ -->
+<h2><span class="num">06.</span>Flujo de trabajo: del sitio al partido</h2>
+
+<div class="workflow">
+  <div class="step"><strong>Define el sitio.</strong> Elige en el menú la estación más cercana a tu terreno, o usa un preset si tu proyecto cae en una de las cuatro zonas, o introduce latitud y longitud manualmente. Si tienes el EPW del sitio, cárgalo: el balance anual se ponderará por radiación real.</div>
+  <div class="step"><strong>Identifica las orientaciones críticas.</strong> Una fachada al norte y otra al oeste tienen necesidades distintas. Trabaja una a la vez.</div>
+  <div class="step"><strong>Elige la estrategia bioclimática.</strong> Usa el árbol de decisión de la sección 3. Si el clima es ambiguo, prueba dos estrategias y compara los balances anuales.</div>
+  <div class="step"><strong>Optimiza.</strong> Pulsa el botón. La app evalúa 312 candidatos y aplica el mejor. Lee el resultado: ¿qué tamaño? ¿qué protección? ¿es coherente con tu intuición?</div>
+  <div class="step"><strong>Ajusta manualmente.</strong> El optimizador no conoce tus restricciones de obra (presupuesto, estructura, normativa). Mueve los sliders desde el óptimo hacia algo construible y observa cómo cambia el balance anual.</div>
+  <div class="step"><strong>Itera por orientación.</strong> Repite para cada fachada. No esperes que el mismo vano funcione en todas — bioclimática es asimétrica.</div>
+  <div class="step"><strong>Exporta.</strong> .obj para llevar a SketchUp/Rhino/Blender y componer con el resto del partido; .json para documentar las decisiones.</div>
+  <div class="step"><strong>Documenta el porqué.</strong> El visualizador justifica tus decisiones con cifras. Úsalas en la memoria descriptiva: "vano de 2.6×2.2 m con alero de 0.6 m y dos parasoles, dimensionados para 1244 horas de sol invernal y 1132 horas de sombra estival, según balance anual EPW Lima."</div>
+</div>
+
+<!-- ============================================================ -->
+<div class="page-break"></div>
+<h2><span class="num">07.</span>Cuatro casos de estudio</h2>
+
+<p>Resultados del optimizador para los cuatro presets (fachada al norte, modelo solar sin EPW cargado, por lo que los periodos frío y cálido salen del calendario). Las cifras son horas de sol al año en cada periodo, sin protección o con la protección elegida. Compara qué cambia entre sitios y entre estrategias.</p>
+
+<div class="case">
+  <div class="case-head">
+    <span class="case-name">Lima</span>
+    <span class="case-coords">lat −12.05° · lon −77.04°</span>
+  </div>
+  <div class="case-zone">Desierto costero subtropical (BWh)</div>
+  <p style="font-size:9.5pt;color:#46545f">Sub-enfría buena parte del año por la corriente de Humboldt; humedad 80–85%. Rara vez recalienta. Estrategia natural: <em>ganancia</em>.</p>
+  <div class="case-results">
+    <div class="case-result"><div class="res-strat">Ganancia</div><div class="res-geom">3.0 × 2.2 m</div><div class="res-prot">Sin protección · 1386 h sol frío + 1218 h sol calor</div></div>
+    <div class="case-result"><div class="res-strat">Equilibrio</div><div class="res-geom">2.2 × 2.2 m</div><div class="res-prot">Sin protección · el sol frío pesa más que el cálido sobre el Norte</div></div>
+    <div class="case-result"><div class="res-strat">Reducir</div><div class="res-geom">2.2 × 1.4 m</div><div class="res-prot">Alero 0.6 + 2 parasoles · corta 96 % del sol cálido, conserva 37 % del frío</div></div>
+  </div>
+</div>
+
+<div class="case">
+  <div class="case-head">
+    <span class="case-name">Iquitos</span>
+    <span class="case-coords">lat −3.74° · lon −73.30°</span>
+  </div>
+  <div class="case-zone">Selva tropical (Af)</div>
+  <p style="font-size:9.5pt;color:#46545f">Calor húmedo constante, sol cenital, no hay invierno. Estrategia natural: <em>reducir excesos</em>.</p>
+  <div class="case-results">
+    <div class="case-result"><div class="res-strat">Ganancia</div><div class="res-geom">3.0 × 2.2 m</div><div class="res-prot">Sin protección · estratégicamente inadecuado</div></div>
+    <div class="case-result"><div class="res-strat">Equilibrio</div><div class="res-geom">3.0 × 2.2 m</div><div class="res-prot">Sin protección · sin EPW el calendario supone un periodo frío que Iquitos no tiene</div></div>
+    <div class="case-result"><div class="res-strat">Reducir</div><div class="res-geom">3.0 × 2.2 m</div><div class="res-prot">Alero 0.6 + 2 parasoles · corta 99 % del sol cálido</div></div>
+  </div>
+</div>
+
+<div class="case">
+  <div class="case-head">
+    <span class="case-name">Cusco</span>
+    <span class="case-coords">lat −13.52° · lon −71.97°</span>
+  </div>
+  <div class="case-zone">Altoandino (Cwb)</div>
+  <p style="font-size:9.5pt;color:#46545f">Sol intenso de día, noches muy frías, oscilación térmica fuerte. Aprovechar masa térmica + ganancia solar diurna. Estrategia natural: <em>ganancia</em> o <em>equilibrio</em>.</p>
+  <div class="case-results">
+    <div class="case-result"><div class="res-strat">Ganancia</div><div class="res-geom">3.0 × 2.2 m</div><div class="res-prot">Sin protección · 1372 h sol frío + 1290 h sol calor</div></div>
+    <div class="case-result"><div class="res-strat">Equilibrio</div><div class="res-geom">2.2 × 2.2 m</div><div class="res-prot">Sin protección · el sol frío pesa más que el cálido sobre el Norte</div></div>
+    <div class="case-result"><div class="res-strat">Reducir</div><div class="res-geom">2.2 × 1.4 m</div><div class="res-prot">Alero 0.6 + 2 parasoles · corta 94 % del sol cálido, conserva 39 % del frío</div></div>
+  </div>
+</div>
+
+<div class="case">
+  <div class="case-head">
+    <span class="case-name">Arequipa</span>
+    <span class="case-coords">lat −16.40° · lon −71.55°</span>
+  </div>
+  <div class="case-zone">Semi-árido de altura (BWk)</div>
+  <p style="font-size:9.5pt;color:#46545f">Inviernos fríos en la mañana, mediodías cálidos, verano soleado. Necesita ambos regímenes. Estrategia natural: <em>equilibrio</em>.</p>
+  <div class="case-results">
+    <div class="case-result"><div class="res-strat">Ganancia</div><div class="res-geom">3.0 × 2.2 m</div><div class="res-prot">Sin protección · 1424 h de sol en periodo cálido</div></div>
+    <div class="case-result"><div class="res-strat">Equilibrio</div><div class="res-geom">3.0 × 1.4 m</div><div class="res-prot">Alero 0.4 · conserva 73 % del sol frío, corta 66 % del cálido</div></div>
+    <div class="case-result"><div class="res-strat">Reducir</div><div class="res-geom">2.2 × 1.4 m</div><div class="res-prot">Alero 0.6 + 2 parasoles · corta 92 % del sol cálido, conserva 47 % del frío</div></div>
+  </div>
+</div>
+
+<div class="savedrule">
+  <strong>Observa:</strong> con la fachada al norte, <em>Equilibrio</em> deja el vano sin protección en Lima, Iquitos y Cusco, y solo propone un alero en Arequipa. Si el sol de periodo frío sobre esa fachada pesa más que el cálido, una protección fija pierde más de lo que gana. Cambia la orientación a este u oeste y vuelve a optimizar: ahí <em>Equilibrio</em> sí propone lamas.
+</div>
+
+<!-- ============================================================ -->
+<h2><span class="num">08.</span>Exportación a SketchUp, Rhino y Blender</h2>
+
+<h3>8.1 OBJ — modelo 3D</h3>
+<p>El botón <strong>Modelo 3D (.obj)</strong> guarda la geometría con nombres legibles por pieza: <span class="pill teal">Antepecho</span> <span class="pill teal">Dintel</span> <span class="pill teal">Jamba_izq</span> <span class="pill teal">Jamba_der</span> <span class="pill teal">Alero</span> <span class="pill teal">Lama_1..N</span> <span class="pill teal">Parasol_1..N</span> <span class="pill teal">Vidrio</span> <span class="pill teal">Techo</span> <span class="pill teal">Piso</span>. Sistema Y-up, metros, normales y caras indexadas. Compatible con:</p>
+<ul>
+  <li><strong>SketchUp</strong>: File → Import → seleccionar .obj. Las piezas aparecen como grupos.</li>
+  <li><strong>Rhino</strong>: File → Import → .obj. Los objetos vienen nombrados, listos para asignar capas.</li>
+  <li><strong>Blender</strong>: File → Import → Wavefront (.obj). Cada pieza como objeto separado.</li>
+  <li><strong>3ds Max, Maya, Cinema 4D, ArchiCAD</strong>: import nativo.</li>
+</ul>
+
+<h3>8.2 JSON — análisis</h3>
+<p>El botón <strong>Análisis (.json)</strong> guarda los parámetros del vano, el instante evaluado, el balance anual y los datos del sitio en un solo archivo legible. Úsalo para:</p>
+<ul>
+  <li>Documentar la memoria descriptiva del proyecto con cifras verificables.</li>
+  <li>Comparar varias variantes (un .json por opción).</li>
+  <li>Anexar al cuaderno de bitácora del proceso.</li>
+</ul>
+
+<!-- ============================================================ -->
+<h2><span class="num">09.</span>Ejercicios</h2>
+
+<div class="exercise">
+  <span class="ex-num">E1.</span><span class="ex-title">Comparativa de orientaciones</span>
+  <div class="ex-body">En Lima, optimiza el vano con estrategia <em>ganancia</em> para fachada norte, sur, este y oeste. Captura los cuatro balances anuales. ¿Qué fachada acepta el vano más grande sin protección? ¿Por qué?</div>
+  <div class="ex-deliv"><strong>Entrega:</strong> tabla comparativa + interpretación en 100 palabras.</div>
+</div>
+
+<div class="exercise">
+  <span class="ex-num">E2.</span><span class="ex-title">Salto climático</span>
+  <div class="ex-body">Toma el vano óptimo de Lima Norte (estrategia ganancia) y cámbialo a Iquitos sin tocar la geometría. ¿Cuántas horas de sol estival recibe ahora? ¿Cómo describirías el cambio cualitativamente?</div>
+  <div class="ex-deliv"><strong>Entrega:</strong> captura del balance anual antes/después + diagnóstico en 80 palabras.</div>
+</div>
+
+<div class="exercise">
+  <span class="ex-num">E3.</span><span class="ex-title">Array equidistante razonado</span>
+  <div class="ex-body">Para una fachada este en Lima, prueba tres configuraciones: 2 parasoles de 0.6 m, 4 parasoles de 0.4 m, 6 parasoles de 0.3 m. Las tres bloquean horas similares. ¿Cuál preferirías como arquitecto y por qué? Considera estructura, mantenimiento, vista hacia afuera y costo.</div>
+  <div class="ex-deliv"><strong>Entrega:</strong> tres capturas + decisión justificada en 150 palabras.</div>
+</div>
+
+<div class="exercise">
+  <span class="ex-num">E4.</span><span class="ex-title">Justificación bioclimática del partido</span>
+  <div class="ex-body">Toma tu proyecto en curso. Identifica una fachada importante. Define su orientación. Optimiza con la estrategia que justifiques. Exporta el OBJ. Llévalo a SketchUp/Rhino y compón con la planta del proyecto.</div>
+  <div class="ex-deliv"><strong>Entrega:</strong> .obj exportado, .json del análisis, captura de la composición, párrafo de justificación de 200 palabras citando las cifras del balance anual.</div>
+</div>
+
+<div class="exercise">
+  <span class="ex-num">E5.</span><span class="ex-title">Tu propia herramienta</span>
+  <div class="ex-body">Usa el documento <em>Plantilla CRAFT</em> para generar una herramienta análoga sobre otro problema bioclimático: ventilación cruzada, inercia térmica, daylight factor, o el que te interese. No pidas todo en un prompt: encadena.</div>
+  <div class="ex-deliv"><strong>Entrega:</strong> herramienta funcional + bitácora del proceso de prompting (qué pediste, qué corregiste, qué iteraste).</div>
+</div>
+
+<!-- ============================================================ -->
+<h2><span class="num">10.</span>Glosario bioclimático</h2>
+
+<dl class="glossary">
+  <dt>Azimut solar</dt>
+  <dd>Dirección horizontal del sol medida en grados desde el norte verdadero. 0°=norte, 90°=este, 180°=sur, 270°=oeste.</dd>
+
+  <dt>Altura solar (elevación)</dt>
+  <dd>Ángulo del sol sobre el horizonte. 0°=horizonte, 90°=cenit.</dd>
+
+  <dt>Balance anual</dt>
+  <dd>Suma de horas de sol y sombra recibidas por un vano a lo largo del año, dividida en periodo frío y periodo cálido.</dd>
+
+  <dt>Brise-soleil</dt>
+  <dd>Sistema de protección solar a base de elementos paralelos (lamas o parasoles) separados a distancias regulares.</dd>
+
+  <dt>BWh / BWk / Cwb / Af</dt>
+  <dd>Clasificación climática de Köppen-Geiger. BWh = árido cálido. BWk = árido frío. Cwb = templado con invierno seco. Af = tropical lluvioso.</dd>
+
+  <dt>EPW (EnergyPlus Weather)</dt>
+  <dd>Archivo estándar de datos climáticos horarios (TMY: Typical Meteorological Year) usado por simuladores energéticos. Disponible en <span style="font-family:'DejaVu Sans Mono',monospace;color:#2f7d83">energyplus.net/weather</span>.</dd>
+
+  <dt>Hemisferio sur (SH) / hemisferio norte (NH)</dt>
+  <dd>El visualizador detecta tu hemisferio automáticamente y ajusta qué meses considera invierno y verano. En el SH, invierno = mayo–agosto.</dd>
+
+  <dt>Incidencia solar</dt>
+  <dd>Ángulo entre el rayo solar y la normal a la superficie del vano. 0° = perpendicular (máxima ganancia). 90° = rasante (nula).</dd>
+
+  <dt>Off-axis (ángulo lateral)</dt>
+  <dd>Diferencia entre el azimut solar y la normal a la fachada, proyectado en planta. Mide cuán oblicuo viene el sol.</dd>
+
+  <dt>Optimizador</dt>
+  <dd>Algoritmo que evalúa un conjunto discreto de candidatos (geometría × protección) y elige el de mejor puntaje según una función de utilidad explícita ligada a la estrategia bioclimática.</dd>
+
+  <dt>Perfil (profile angle)</dt>
+  <dd>Proyección vertical del ángulo solar sobre el plano perpendicular a la fachada. Determina si un alero bloquea o no el sol.</dd>
+
+  <dt>Raycasting</dt>
+  <dd>Técnica de cálculo que traza un rayo desde un punto hasta el sol y verifica si algún obstáculo lo intercepta. La forma más directa de detectar sombras.</dd>
+
+  <dt>Régimen tropical</dt>
+  <dd>Para latitudes con valor absoluto menor a 8°, no hay invierno y verano marcados; el sol está siempre alto. El visualizador usa un proxy basado en la posición del sol en la trayectoria anual.</dd>
+
+  <dt>Sub-enfriamiento</dt>
+  <dd>Condición climática donde el local pierde más calor del que gana naturalmente. La estrategia adecuada es captar sol, no bloquearlo.</dd>
+
+  <dt>Sweep paramétrico</dt>
+  <dd>Barrido exhaustivo de un espacio de parámetros discretos (anchos, altos, protecciones), evaluando cada combinación.</dd>
+</dl>
+
+<footer>
+  MALI · Módulo 3 · Herramientas Digitales para Proyectos Arquitectónicos<br>
+  Visualizador Solar de Vanos v3 · Manual didáctico · Sesión 04: Estrategia bioclimática y partido con IA
+</footer>
+
+</body>
+</html>
