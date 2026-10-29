@@ -155,8 +155,10 @@ footer { color: var(--mute); font-size: 13px; }
 
   <section class="opt" aria-label="Lluvia mensual, opcional">
     <h2>Lluvia mensual (opcional)</h2>
-    <p>El archivo EPW no es una fuente confiable de lluvia. Al cargar el GeoJSON, la página consulta sola la lluvia mensual de NASA POWER para el centroide de tu terreno; es un dato de modelo, referencial. Si tienes cifras de SENAMHI, puedes reemplazarlas escribiendo los 12 valores. Mahoney las necesita para el indicador de protección contra la lluvia.</p>
+    <p>El archivo EPW no es una fuente confiable de lluvia. Al cargar el GeoJSON, la página consulta sola la lluvia mensual de NASA POWER para el centroide de tu terreno; es un dato de modelo, referencial. Si descargaste el .txt diario de una estación de SENAMHI, cárgalo con el botón: la página promedia los totales mensuales de los últimos 30 años del archivo y reemplaza el dato de NASA POWER. También puedes escribir los 12 valores a mano. Mahoney las necesita para el indicador de protección contra la lluvia.</p>
     <button type="button" class="filebtn" id="getrain">Obtener lluvia automática (NASA POWER)</button>
+    <label class="filebtn" for="senamhi">Cargar .txt de SENAMHI
+      <input type="file" id="senamhi" accept=".txt,.csv,.dat,text/plain"></label>
     <div class="stack">
       <label for="rain">Lluvia total de cada mes, en mm (12 valores, de enero a diciembre)
         <input type="text" id="rain" placeholder="Ej.: 90 110 135 120 60 25 10 15 40 80 90 100" autocomplete="off"></label>
@@ -652,6 +654,43 @@ footer { color: var(--mute); font-size: 13px; }
     }
   }
   $('getrain').addEventListener('click', fetchRain);
+
+  // ---------- Lluvia de una estación SENAMHI: .txt diario (año mes día lluvia ...; -99.9 = sin dato) ----------
+  async function handleSenamhi(file) {
+    var info = $('raininfo');
+    try {
+      rainSeq++;
+      var txt = decode(await file.arrayBuffer()), M = {}, lines = 0;
+      txt.split(/\r?\n/).forEach(function (l) {
+        var t = l.trim().split(/[\s;]+/);
+        if (t.length < 4) return;
+        var y = +t[0], m = +t[1], d = +t[2], p = parseFloat(t[3]);
+        if (!(y > 1800 && y < 2200 && m >= 1 && m <= 12 && d >= 1 && d <= 31) || !isFinite(p)) return;
+        lines++;
+        var k = y * 100 + m, o = M[k] || (M[k] = { y: y, m: m, s: 0, n: 0 });
+        if (p >= 0) { o.s += p; o.n++; }
+      });
+      if (!lines) throw new Error('no reconozco el formato: se esperan columnas año, mes, día y lluvia en mm');
+      var ymax = 0; Object.keys(M).forEach(function (k) { if (M[k].y > ymax) ymax = M[k].y; });
+      var y0 = ymax - 29, acc = [], cnt = [], yrs = {};
+      for (var j = 0; j < 12; j++) { acc.push(0); cnt.push(0); }
+      Object.keys(M).forEach(function (k) {
+        var o = M[k], dm = new Date(o.y, o.m, 0).getDate();
+        if (o.y < y0 || o.n < 0.9 * dm) return;
+        acc[o.m - 1] += o.s * dm / o.n; cnt[o.m - 1]++; yrs[o.y] = 1;
+      });
+      if (cnt.some(function (c) { return c < 10; })) throw new Error('hay meses con menos de 10 años de datos completos en los últimos 30 años del archivo');
+      var vals = acc.map(function (a, j) { return Math.round(a / cnt[j]); });
+      var ys = Object.keys(yrs).map(Number).sort(function (a, b) { return a - b; });
+      $('rain').value = vals.join(' ');
+      $('rainsrc').value = 'SENAMHI, archivo ' + file.name + ', promedio de totales mensuales de ' + ys.length + ' años con datos entre ' + ys[0] + ' y ' + ys[ys.length - 1] + ' (meses con al menos 90 % de los días); escribe aquí el nombre de la estación';
+      currentRain(); render();
+      info.textContent = '12 valores calculados del archivo de SENAMHI · ' + ys.length + ' años (' + ys[0] + '-' + ys[ys.length - 1] + ') · total anual ' + vals.reduce(function (a, b) { return a + b; }, 0) + ' mm · agrega el nombre de la estación en la fuente';
+    } catch (e) {
+      info.textContent = 'No pude leer el archivo de SENAMHI (' + (e && e.message ? e.message : 'error') + ').';
+    }
+  }
+  $('senamhi').addEventListener('change', function (ev) { var f = ev.target.files && ev.target.files[0]; if (f) handleSenamhi(f); ev.target.value = ''; });
 
   async function handleGeo(file) {
     var info = $('geoinfo');
