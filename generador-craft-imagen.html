@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CRAFT para ComfyUI · Generador de Prompts</title>
+<title>Generador de prompts · LLM, plataformas y ComfyUI</title>
 <style>
 :root{--bg:#0E1E1A;--panel:#16302A;--panel2:#1D3B33;--deep:#0B1714;--line:#2A4A41;--teal:#8ECFC9;--gold:#C8A951;--txt:#E9F1ED;--mut:#9FB8AE;--neg:#D18B6A}
 *{box-sizing:border-box}
@@ -91,11 +91,13 @@ footer{border-top:1px solid var(--line);padding-top:11px;margin-top:24px;color:#
 <header>
   <div>
     <div class="eyebrow">Prompt Builder</div>
-    <h1>CRAFT para ComfyUI</h1>
-    <p class="sub">Arquitectura e interiorismo · SDXL y Flux · ES / EN / 中文 / JSON</p>
+    <h1>Generador de prompts</h1>
+    <p class="sub">Arquitectura e interiorismo · 1 · LLM (CRAFT) · 2 · Plataformas online · 3 · ComfyUI, Automatic1111 y similares</p>
   </div>
   <div class="tabs">
-    <button class="tab on" id="tabGen">Generar</button>
+    <button class="tab on" id="tabLlm">1 · LLM (CRAFT)</button>
+    <button class="tab" id="tabWeb">2 · Plataformas online</button>
+    <button class="tab" id="tabComfy">3 · ComfyUI y similares</button>
     <button class="tab" id="tabLib">Biblioteca</button>
   </div>
 </header>
@@ -104,9 +106,10 @@ footer{border-top:1px solid var(--line);padding-top:11px;margin-top:24px;color:#
   <span class="lbl">Workflow</span>
   <div class="wf-grid" id="wfGrid"></div>
   <div class="hint hide" id="hint"></div>
+  <p class="sub" id="modeNote" style="margin:0 0 10px"></p>
   <div class="bar">
-    <div class="grp"><span class="grp-l">Modelo</span><div id="modelBtns" style="display:flex;gap:4px"></div></div>
-    <div class="grp"><span class="grp-l">Salida</span><div id="langBtns" style="display:flex;gap:4px"></div></div>
+    <div class="grp" id="grpModel"><span class="grp-l" id="modelLbl">Modelo</span><div id="modelBtns" style="display:flex;gap:4px"></div></div>
+    <div class="grp" id="grpLang"><span class="grp-l">Salida</span><div id="langBtns" style="display:flex;gap:4px"></div></div>
   </div>
   <div class="pills" id="pills"></div>
   <div class="fields" id="fields"></div>
@@ -127,7 +130,7 @@ footer{border-top:1px solid var(--line);padding-top:11px;margin-top:24px;color:#
   <div class="lib-bar">
     <input type="text" id="libSearch" placeholder="Buscar…">
     <select id="libWf"></select>
-    <select id="libModel"><option value="all">Ambos modelos</option><option value="sdxl">SDXL</option><option value="flux">Flux</option></select>
+    <select id="libModel"><option value="all">Ambos modelos</option><option value="sdxl">SDXL</option><option value="flux">Flux</option><option value="online">Plataformas online</option><option value="chatgpt">ChatGPT</option><option value="gemini">Gemini</option><option value="otro">Otro LLM</option></select>
     <select id="libSort"><option value="new">Recientes</option><option value="old">Antiguos</option><option value="wf">Por workflow</option></select>
     <button class="btn-xs" id="btnExport">Exportar JSON</button>
   </div>
@@ -178,14 +181,53 @@ zh:{base:"模糊, 低质量, 几何变形, 窗户变形, 透视扭曲, 比例失
 };
 
 const QUAL={en:", architectural visualization, high quality, detailed, 8k, professional photography, sharp focus",es:", visualización arquitectónica, alta calidad, detallado, 8k, fotografía profesional, enfoque nítido",zh:", 建筑可视化, 高质量, 细节丰富, 8k, 专业摄影, 清晰对焦"};
-const LANGS=[["es","Español"],["en","English"],["zh","中文"],["json","JSON"]];
+const LANGS=[["es","Español"],["en","English"],["zh","中文"],["json","JSON"],["craft","CRAFT · LLM"]];
 const LI={es:0,en:1,zh:2};
 
 const cap=s=>s?s.charAt(0).toUpperCase()+s.slice(1):s;
 const an=s=>(s&&/^[aeiou]/i.test(s.trim())?"an ":"a ")+s;
 function resolve(key,val,lang){const b=T[key];if(!b)return val;const r=b.find(x=>x[0]===val||x[1]===val||x[2]===val);return r?r[LI[lang]]:val;}
 
+/* ===== CRAFT PARA LLM (ChatGPT y similares) ===== */
+function buildCraft(wfKey,vals,extra){
+  const w=WF[wfKey], v={};
+  w.fields.forEach(f=>{v[f]=resolve(f,vals[f],"es");});
+  const REF={
+    sketch:"Adjunto un boceto de mi proyecto, que fija la composición.",
+    model3d:"Adjunto una captura del 3D de mi proyecto, que fija la volumetría, las proporciones y la posición de cada zona.",
+    site:"Adjunto una foto del sitio real.",
+    material:"Adjunto la imagen base del proyecto, cuya composición e iluminación no deben cambiar."};
+  const ACC={
+    ext:"genera una imagen de exterior del proyecto con los datos del contexto.",
+    int:"genera una imagen de concepto del interior de este espacio.",
+    sketch:"genera un render fotorrealista a partir del boceto adjunto.",
+    model3d:"genera un render exterior de la captura adjunta.",
+    site:"genera una propuesta de intervención sobre la foto del sitio.",
+    material:"genera la misma imagen con el material indicado.",
+    massing:"genera un estudio volumétrico del proyecto."};
+  const TON={
+    ext:"realista y sobrio. Usa solo los datos de este mensaje; no agregues elementos que no estén indicados.",
+    int:"realista y sobrio. Usa solo los datos de este mensaje; no agregues mobiliario, materiales ni aberturas que no estén indicados.",
+    sketch:"realista y sobrio. Conserva la composición, las proporciones y la posición de cada elemento del boceto adjunto. No agregues volúmenes ni cambies alturas.",
+    model3d:"realista y sobrio. Conserva la volumetría, las proporciones, los niveles y la posición de cada zona de la captura adjunta. No agregues volúmenes, ni cambies alturas, ni modifiques la topografía.",
+    site:"realista y sobrio. Conserva el contexto real de la foto y describe solo la intervención. No modifiques lo que no forma parte de la intervención.",
+    material:"realista y sobrio. Cambia únicamente el material indicado y conserva todo lo demás: geometría, composición, iluminación y encuadre.",
+    massing:"abstracto. Usa solo los datos de este mensaje; sin materiales, texturas, personas ni vegetación."};
+  const ctxLines=w.fields.map(f=>w.labels[f]+": "+v[f]).join("\n")+(extra?"\nDetalle específico: "+extra:"");
+  const ref=REF[wfKey]?REF[wfKey]+"\n":"";
+  let fmtTxt=wfKey==="massing"?"una imagen horizontal con volúmenes blancos abstractos, sin detalle material, sobre fondo neutro":"una imagen horizontal";
+  if(w.i2i)fmtTxt+=", con el mismo encuadre de la imagen adjunta";
+  else if(v.view)fmtTxt+=", vista: "+v.view;
+  else if(v.interiorView)fmtTxt+=", encuadre: "+v.interiorView;
+  fmtTxt+=".";
+  const pos="CONTEXTO:\n"+ref+ctxLines+"\n\nROL:\narquitecto proyectista senior, especialista en diversos tipos de proyectos, con nivel de doctorado.\n\nACCIÓN:\n"+ACC[wfKey]+"\n\nFORMATO:\n"+fmtTxt+"\n\nTONO Y CRITERIOS:\n"+TON[wfKey];
+  const cmp=w.fields.map(f=>w.labels[f].toLowerCase()).join(", ");
+  const neg="OBJETIVO DE CONTROL:\nverificar que la imagen generada corresponde a los datos indicados.\n\nRESTRICCIONES:\nno regeneres la imagen; solo señala diferencias.\n\nFIDELIDAD DE PRODUCCIÓN:\ncompara "+cmp+" de la imagen con "+(w.i2i?"los datos del contexto y la imagen adjunta":"los datos del contexto")+".\n\nVERIFICACIÓN:\nmarca cada dato como Verificado, Supuesto propio o Sin verificar.";
+  return {pos:pos,neg:neg};
+}
+
 function buildPrompt(wfKey,vals,model,extra,lang){
+  if(lang==="craft")return buildCraft(wfKey,vals,extra);
   const flux=model==="flux",v={};
   WF[wfKey].fields.forEach(f=>{v[f]=resolve(f,vals[f],lang);});
   const q=flux?"":QUAL[lang], ex=extra?(flux?" "+extra+".":", "+extra):"", N=NEG[lang];
@@ -253,7 +295,9 @@ function buildJSON(wfKey,vals,model,extra,dn){
 }
 
 /* ===== ESTADO ===== */
-let wfKey="ext", model="flux", lang="es", dn=0.70, out=null, lib=[];
+const LLMS=[["chatgpt","ChatGPT"],["gemini","Gemini"],["otro","Otro LLM"]];
+let llm="chatgpt";
+let mode="llm", wfKey="ext", model="flux", lang="craft", dn=0.70, out=null, lib=[];
 const vals={}; Object.keys(T).forEach(k=>vals[k]=T[k][0][0]);
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -285,14 +329,30 @@ function renderWf(){
 
 /* ===== RENDER: MODELO / IDIOMA / PILLS ===== */
 function renderBar(){
-  $("modelBtns").innerHTML=["sdxl","flux"].map(m=>
-    `<button class="opt${model===m?" on":""}${m==="flux"?" gold":""}" data-m="${m}">${m.toUpperCase()}</button>`).join("");
-  $("modelBtns").querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>{model=b.dataset.m;out=null;renderAll();});
-  $("langBtns").innerHTML=LANGS.map(([k,l])=>
+  const isL=mode==="llm", isW=mode==="web", isC=mode==="comfy";
+  $("modeNote").textContent=isL?"Para pegar en ChatGPT, Gemini u otro modelo de lenguaje con generación de imágenes."
+    :isW?"Para plataformas de render en línea que reciben una descripción en lenguaje natural."
+    :"Para usar en ComfyUI, Automatic1111 u otra interfaz local similar de Stable Diffusion o FLUX. Los nombres de los parámetros pueden variar entre interfaces.";
+  $("grpModel").style.display=isW?"none":"";
+  $("grpLang").style.display=isL?"none":"";
+  $("modelLbl").textContent=isL?"LLM destino":"Modelo";
+  if(isL){
+    $("modelBtns").innerHTML=LLMS.map(([k,l])=>
+      `<button class="opt${llm===k?" on":""}" data-m="${k}">${esc(l)}</button>`).join("");
+    $("modelBtns").querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>{llm=b.dataset.m;out=null;renderAll();});
+  }else{
+    $("modelBtns").innerHTML=["sdxl","flux"].map(m=>
+      `<button class="opt${model===m?" on":""}${m==="flux"?" gold":""}" data-m="${m}">${m.toUpperCase()}</button>`).join("");
+    $("modelBtns").querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>{model=b.dataset.m;out=null;renderAll();});
+  }
+  const L=LANGS.filter(l=>isC?l[0]!=="craft":(isW?["es","en","zh"].includes(l[0]):false));
+  $("langBtns").innerHTML=L.map(([k,l])=>
     `<button class="opt${lang===k?" on":""}" data-l="${k}">${esc(l)}</button>`).join("");
   $("langBtns").querySelectorAll("[data-l]").forEach(b=>b.onclick=()=>{lang=b.dataset.l;out=null;renderAll();});
-  $("pills").innerHTML=Object.entries(SET[model]).map(([k,v])=>`<span class="pill">${esc(k)} <b>${esc(v)}</b></span>`).join("");
-  $("btnGen").textContent="Generar "+model.toUpperCase()+" · "+LANGS.find(l=>l[0]===lang)[1];
+  $("pills").innerHTML=isC?Object.entries(SET[model]).map(([k,v])=>`<span class="pill">${esc(k)} <b>${esc(v)}</b></span>`).join(""):"";
+  $("btnGen").textContent=isL?"Generar · CRAFT para "+LLMS.find(l=>l[0]===llm)[1]
+    :isW?"Generar · prompt para plataformas online · "+LANGS.find(l=>l[0]===lang)[1]
+    :"Generar "+model.toUpperCase()+" · "+LANGS.find(l=>l[0]===lang)[1];
 }
 
 /* ===== RENDER: CAMPOS ===== */
@@ -339,7 +399,7 @@ function initCombo(f){
 /* ===== RENDER: DENOISE ===== */
 function renderDn(){
   const w=WF[wfKey], box=$("dnBox");
-  if(!w.i2i){box.className="dn-box hide";return;}
+  if(!w.i2i||mode!=="comfy"){box.className="dn-box hide";return;}
   const ok=dn>=w.dn[0]&&dn<=w.dn[1];
   box.className="dn-box"+(ok?"":" bad");
   $("dnVal").textContent=dn.toFixed(2);
@@ -353,9 +413,11 @@ $("dnRange").oninput=e=>{dn=parseFloat(e.target.value);renderDn();};
 /* ===== GENERAR ===== */
 $("btnGen").onclick=()=>{
   const extra=$("extra").value.trim();
-  out = lang==="json"
-    ? {json:true,data:buildJSON(wfKey,vals,model,extra,dn)}
-    : Object.assign({json:false,lang:lang},buildPrompt(wfKey,vals,model,extra,lang));
+  const m=mode==="web"?"flux":model, lg=mode==="llm"?"craft":lang;
+  const meta={mode:mode,model:m,llm:llm};
+  out = lg==="json"
+    ? Object.assign({json:true,data:buildJSON(wfKey,vals,m,extra,dn)},meta)
+    : Object.assign({json:false,lang:lg},meta,buildPrompt(wfKey,vals,m,extra,lg));
   renderOut();
 };
 
@@ -369,7 +431,7 @@ function renderOut(){
   c.innerHTML=`<div class="out">
     <div class="out-h">
       <div class="out-meta">
-        <span style="color:${model==="flux"?"var(--gold)":"var(--teal)"};font-weight:700;font-size:12px">${model.toUpperCase()}</span>
+        <span style="color:${out.mode==="comfy"&&out.model==="sdxl"?"var(--teal)":"var(--gold)"};font-weight:700;font-size:12px">${out.mode==="llm"?"CRAFT · "+LLMS.find(l=>l[0]===out.llm)[1].toUpperCase():out.mode==="web"?"PLATAFORMAS ONLINE":"INTERFAZ LOCAL · "+out.model.toUpperCase()}</span>
         <span style="color:var(--mut);font-size:10.5px">${esc(lname)}</span>
         ${out.json?"":`<span style="color:var(--mut);font-size:10px">${words} palabras</span>`}
       </div>
@@ -380,17 +442,17 @@ function renderOut(){
     </div>
     <div class="out-body${out.json?" json":""}">${esc(body)}</div>
     ${(!out.json&&out.neg)?`<div class="out-h" style="border-top:1px solid var(--line)">
-        <span style="color:var(--neg);font-weight:700;font-size:11px">Negativo</span>
+        <span style="color:var(--neg);font-weight:700;font-size:11px">${out.lang==="craft"?"Control (segundo paso)":"Negativo"}</span>
         <button class="btn-xs" id="btnCopyNeg">Copiar</button></div>
       <div class="out-neg">${esc(out.neg)}</div>`:""}
-    ${(w.i2i&&!out.json)?`<div class="out-foot">Denoise <b>${dn.toFixed(2)}</b> · Load Image → VAE Encode → KSampler</div>`:""}
+    ${(w.i2i&&!out.json&&out.mode==="comfy")?`<div class="out-foot">Denoise <b>${dn.toFixed(2)}</b> · Load Image → VAE Encode → KSampler</div>`:""}
   </div>`;
   $("btnCopyPos").onclick=e=>copyTxt(body,e.target);
   if($("btnCopyNeg"))$("btnCopyNeg").onclick=e=>copyTxt(out.neg,e.target);
   $("btnSave").onclick=()=>{
     const w=WF[wfKey];
-    lib.unshift({id:Date.now(),wfKey:wfKey,wf:w.es,model:model,lang:out.json?"json":out.lang,
-      pos:body,neg:out.json?null:out.neg,dn:w.i2i?dn.toFixed(2):null,name:"",
+    lib.unshift({id:Date.now(),wfKey:wfKey,wf:w.es,model:out.mode==="llm"?out.llm:out.mode==="web"?"online":out.model,lang:out.json?"json":out.lang,
+      pos:body,neg:out.json?null:out.neg,dn:(w.i2i&&out.mode==="comfy")?dn.toFixed(2):null,name:"",
       time:new Date().toLocaleString("es",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})});
     persist();renderLib();updateTabs();
     const b=$("btnSave");b.textContent="✓ Guardado";setTimeout(()=>b.textContent="Guardar",1400);
@@ -457,8 +519,16 @@ $("btnExport").onclick=()=>{
 
 /* ===== TABS ===== */
 function updateTabs(){$("tabLib").textContent="Biblioteca"+(lib.length?" ("+lib.length+")":"");}
-$("tabGen").onclick=()=>{$("tabGen").classList.add("on");$("tabLib").classList.remove("on");$("viewGen").classList.remove("hide");$("viewLib").classList.add("hide");};
-$("tabLib").onclick=()=>{$("tabLib").classList.add("on");$("tabGen").classList.remove("on");$("viewLib").classList.remove("hide");$("viewGen").classList.add("hide");renderLib();};
+function setTab(id){
+  ["tabLlm","tabWeb","tabComfy","tabLib"].forEach(k=>$(k).classList.toggle("on",k===id));
+  const g=id!=="tabLib";
+  $("viewGen").classList.toggle("hide",!g);$("viewLib").classList.toggle("hide",g);
+  if(g){mode=id==="tabLlm"?"llm":id==="tabWeb"?"web":"comfy";
+    lang=mode==="llm"?"craft":(["craft","json"].includes(lang)&&mode==="web"||lang==="craft"?"es":lang);
+    out=null;renderAll();}
+  else renderLib();
+}
+["tabLlm","tabWeb","tabComfy","tabLib"].forEach(k=>$(k).onclick=()=>setTab(k));
 
 /* ===== INIT ===== */
 function renderAll(){renderWf();renderBar();renderFields();renderDn();renderOut();}
